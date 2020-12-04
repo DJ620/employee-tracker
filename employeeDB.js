@@ -19,7 +19,7 @@ const begin = () => {
         {
             type: 'list',
             message: "How may I assist you?",
-            choices: ["Add employee information", "Update employee information", "View employee information", "Delete employee information"],
+            choices: ["Add employee information", "Update employee information", "View employee information", "Delete employee information", "I'm all done"],
             name: "choice"
         }
     ]).then((response) => {
@@ -35,6 +35,9 @@ const begin = () => {
                     break;
                 case "Delete employee information":
                     //deleteInfo();
+                    break;
+                case "I'm all done":
+                    connection.end();
                     break;
                 default:
                     begin();
@@ -59,10 +62,71 @@ const addInfo = () => {
                 addRole();
                 break;
             case "New employee":
-                addEmployee();
+                //addEmployee();
                 break;
             default:
                 begin();
         };
+    });
+};
+
+const addDepartment = () => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: "What is the name of the new department?",
+            name: 'department'
+        }
+    ]).then ((response) => {
+        connection.query(
+            "INSERT INTO department SET ?",
+            {
+                name: response.department
+            },
+            (err, res) => {
+                if (err) throw err;
+                console.log(`Success! Added ${response.department} to the database.`);
+                begin();
+            }
+        );
+    });
+};
+
+const addRole = () => {
+    connection.query("SELECT * FROM department", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'input',
+                message: "What is the role you'd like to add?",
+                name: 'role'
+            },
+            {
+                type: 'input',
+                message: "What is the salary of this position?",
+                name: "salary"
+            },
+            {
+                type: "list",
+                message: "What department does this role belong in?",
+                choices: res.map(x => x.name),
+                name: 'department'
+            }
+        ]).then((response) => {
+            let department = res.filter(x=>x.name === response.department);
+            connection.query(
+                "INSERT INTO role SET ?",
+                {
+                    title: response.role,
+                    salary: response.salary,
+                    department_id: department[0].id
+                },
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.log(`Success! Added ${response.role} to the database.`);
+                    begin();
+                }
+            );
+        });
     });
 };
