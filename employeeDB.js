@@ -95,6 +95,10 @@ const addDepartment = () => {
 const addRole = () => {
     connection.query("SELECT * FROM department", (err, res) => {
         if (err) throw err;
+        if (res.length < 1) {
+            console.log("No departments on file, please first create a department and then you can add a role.");
+            return begin();
+        }
         inquirer.prompt([
             {
                 type: 'input',
