@@ -15,7 +15,6 @@ connection.connect((err) => {
 });
 
 const begin = () => {
-    console.log("Welcome to the Employee Database.");
     inquirer.prompt([
         {
             type: 'list',
@@ -24,6 +23,46 @@ const begin = () => {
             name: "choice"
         }
     ]).then((response) => {
+            switch (response.choice) {
+                case "Add employee information":
+                    addInfo();
+                    break;
+                case "Update employee information":
+                    //updateInfo();
+                    break;
+                case "View employee information":
+                    //viewInfo();
+                    break;
+                case "Delete employee information":
+                    //deleteInfo();
+                    break;
+                default:
+                    begin();
+            };
+    });
+};
 
-    })
-}
+const addInfo = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "What would you like to add?",
+            choices: ["New department", "New role", "New employee"],
+            name: 'toAdd'
+        }
+    ]).then((response) => {
+        switch (response.toAdd) {
+            case "New department":
+                addDepartment();
+                break;
+            case "New role":
+                addRole();
+                break;
+            case "New employee":
+                addEmployee();
+                break;
+            default:
+                begin();
+        };
+    });
+};
