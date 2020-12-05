@@ -62,7 +62,7 @@ const addInfo = () => {
                 addRole();
                 break;
             case "New employee":
-                //addEmployee();
+                addEmployee();
                 break;
             default:
                 begin();
@@ -98,7 +98,7 @@ const addRole = () => {
         if (res.length < 1) {
             console.log("No departments on file, please first create a department and then you can add a role.");
             return begin();
-        }
+        };
         inquirer.prompt([
             {
                 type: 'input',
@@ -134,3 +134,31 @@ const addRole = () => {
         });
     });
 };
+
+const addEmployee = () => {
+    connection.query("SELECT * FROM role", (err, res) => {
+        if (err) throw err;
+        if (res.length < 1) {
+            console.log("No roles on file, please first create a role and then you can add an employee.");
+            return begin();
+        };
+        inquirer.prompt([
+            {
+                type: 'input',
+                message: "What is the employee's first name?",
+                name: "firstName"
+            },
+            {
+                type: 'input',
+                message: "What is the employee's last name?",
+                name: "lastName"
+            },
+            {
+                type: 'list',
+                message: "What is the employee's role?",
+                choices: res.map(role=>role.title),
+                name: 'role'
+            }
+        ])
+    })
+}
