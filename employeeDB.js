@@ -85,7 +85,7 @@ const addDepartment = () => {
             },
             (err, res) => {
                 if (err) throw err;
-                console.log(`Success! Added ${response.department} to the database.`);
+                console.log(`Success! Added ${response.department} to the database.\n`);
                 begin();
             }
         );
@@ -96,7 +96,7 @@ const addRole = () => {
     connection.query("SELECT * FROM department", (err, res) => {
         if (err) throw err;
         if (res.length < 1) {
-            console.log("No departments on file, please first create a department and then you can add a role.");
+            console.log("No departments on file, please first create a department and then you can add a role.\n");
             return begin();
         };
         inquirer.prompt([
@@ -127,7 +127,7 @@ const addRole = () => {
                 },
                 (err2, res2) => {
                     if (err2) throw err2;
-                    console.log(`Success! Added ${response.role} to the database.`);
+                    console.log(`Success! Added ${response.role} to the database.\n`);
                     begin();
                 }
             );
@@ -139,26 +139,63 @@ const addEmployee = () => {
     connection.query("SELECT * FROM role", (err, res) => {
         if (err) throw err;
         if (res.length < 1) {
-            console.log("No roles on file, please first create a role and then you can add an employee.");
+            console.log("No roles on file, please first create a role and then you can add an employee.\n");
             return begin();
         };
-        inquirer.prompt([
-            {
-                type: 'input',
-                message: "What is the employee's first name?",
-                name: "firstName"
-            },
-            {
-                type: 'input',
-                message: "What is the employee's last name?",
-                name: "lastName"
-            },
-            {
-                type: 'list',
-                message: "What is the employee's role?",
-                choices: res.map(role=>role.title),
-                name: 'role'
-            }
-        ])
-    })
-}
+        connection.query("SELECT employee.first_name, employee.last_name, employee.role_id FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title = 'manager'", (err2, res2) => {
+            inquirer.prompt([
+                {
+                    type: 'input',
+                    message: "What is the employee's first name?",
+                    name: "firstName"
+                },
+                {
+                    type: 'input',
+                    message: "What is the employee's last name?",
+                    name: "lastName"
+                },
+                {
+                    type: 'list',
+                    message: "What is the employee's role?",
+                    choices: res.map(role=>role.title),
+                    name: 'role'
+                },
+                {
+                    type: 'list',
+                    message: "Who is the employee's manager?",
+                    choices: [...res2.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
+                    name: 'manager'
+                }
+            ]).then((response) => {
+                let roleID = res.filter(role => {
+                    if (role.title === response.role) {
+                        return role.id;
+                    };
+                });
+                let managerID = "";
+                if (response.manager !== "This employee doesn't have a manager") {
+                    managerID = res2.filter(employee => {
+                        if (`${employee.first_name} ${employee.last_name}` === response.manager) {
+                            return employee.id;
+                        };
+                    });
+                };
+                connection.query(
+                    "INSERT INTO employee SET ?",
+                    {
+                        first_name: response.firstName,
+                        last_name: response.lastName,
+                        role_id: roleID[0],
+                        manager_id: managerID[0]
+                    },
+                    (err3, res3) => {
+                        if (err3) throw err3;
+                        console.log(`Success! Added ${response.firstName} ${response.lastName} to the database.\n`);
+                        begin();
+                    }
+                );
+            });
+        });
+    });
+};
+
