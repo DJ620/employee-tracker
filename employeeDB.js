@@ -142,7 +142,7 @@ const addEmployee = () => {
             console.log("No roles on file, please first create a role and then you can add an employee.\n");
             return begin();
         };
-        connection.query("SELECT employee.first_name, employee.last_name, employee.role_id FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title = 'manager'", (err2, res2) => {
+        connection.query("SELECT employee.id, employee.first_name, employee.last_name, employee.role_id FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title = 'manager'", (err2, res2) => {
             inquirer.prompt([
                 {
                     type: 'input',
@@ -167,16 +167,17 @@ const addEmployee = () => {
                     name: 'manager'
                 }
             ]).then((response) => {
-                let roleID = res.filter(role => {
+                let roleID; 
+                let managerID;
+                res.forEach(role => {
                     if (role.title === response.role) {
-                        return role.id;
+                        roleID = role.id;
                     };
                 });
-                let managerID = "";
                 if (response.manager !== "This employee doesn't have a manager") {
-                    managerID = res2.filter(employee => {
+                    res2.forEach(employee => {
                         if (`${employee.first_name} ${employee.last_name}` === response.manager) {
-                            return employee.id;
+                            managerID = employee.id;
                         };
                     });
                 };
@@ -185,8 +186,8 @@ const addEmployee = () => {
                     {
                         first_name: response.firstName,
                         last_name: response.lastName,
-                        role_id: roleID[0],
-                        manager_id: managerID[0]
+                        role_id: roleID,
+                        manager_id: managerID
                     },
                     (err3, res3) => {
                         if (err3) throw err3;
