@@ -646,3 +646,46 @@ const departmentRoles = () => {
         });
     });
 };
+
+const viewEmployees = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "How would you like to view employees?",
+            choices: ["By department", "By role", "By manager", "All employees"],
+            name: "choice"
+        }
+    ]).then((response) => {
+        switch (response.choice) {
+            case "By department":
+                employeeByDepartment();
+                break;
+            case "By role":
+                employeeByRole();
+                break;
+            case "By manager":
+                employeeByManager();
+                break;
+            default:
+                connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id", (err, res) => {
+                    let employeeTable = [];
+                    res.forEach(employee => {
+                        let empObj = {};
+                        empObj["ID #"] = employee.id;
+                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
+                        empObj["Job Title"] = employee.title;
+                        empObj.Salary = employee.salary;
+                        empObj.Department = employee.name;
+                        empObj.Manager = "This employee has no manager";
+                        res.forEach(emp => {
+                            if (employee.manager_id === emp.id) {
+                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+                            };
+                        });
+                        employeeTable.push(empObj);
+                    });
+                    console.table(employeeTable);
+                })
+        }       
+    })
+}
