@@ -850,3 +850,35 @@ const deleteRole = () => {
         });
     });
 };
+
+const deleteEmployee = () => {
+    connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "Which employee would you like to delete?",
+                choices: res.map(employee=>`${employee.first_name} ${employee.last_name}`),
+                name: 'deleteChoice'
+            }
+        ]).then((response) => {
+            let name = response.deleteChoice.split(" ");
+            connection.query(
+                "DELETE FROM employee WHERE ? and ?",
+                [
+                    {
+                        first_name: name[0]
+                    },
+                    {
+                        last_name: name[1]
+                    }
+                ],
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.log(`Success! ${response.deleteChoice} has been deleted from the database.\n`);
+                    begin();
+                }
+            );
+        });
+    });
+};
