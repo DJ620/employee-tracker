@@ -622,3 +622,27 @@ const viewRoles = () => {
         };
     });
 };
+
+const departmentRoles = () => {
+    connection.query("SELECT name FROM department", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "Which department's roles would you like to see?",
+                choices: res,
+                name: 'departmentChoice'
+            }
+        ]).then((response) => {
+            connection.query(
+                `SELECT role.title, role.salary FROM role LEFT JOIN department ON department.id = role.department_id WHERE department.name = ?`,
+                response.departmentChoice,
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.table(res2);
+                    begin();                
+                }
+            );
+        });
+    });
+};
