@@ -798,3 +798,29 @@ const deleteInfo = () => {
         };
     });
 };
+
+const deleteDepartment = () => {
+    connection.query("SELECT name FROM department", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "Which department would you like to delete?",
+                choices: res,
+                name: 'deleteChoice'
+            }
+        ]).then((response) => {
+            connection.query(
+                "DELETE FROM department WHERE ?",
+                {
+                    name: response.deleteChoice
+                },
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.log(`Success! ${response.deleteChoice} has been removed from the database.\n`);
+                    begin();
+                }
+            );
+        });
+    });
+};
