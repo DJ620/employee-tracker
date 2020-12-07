@@ -1,5 +1,5 @@
-const mysql = require("mysql");
 const inquirer = require("inquirer");
+const mysql = require("mysql");
 
 const connection = mysql.createConnection({
     host: "localhost",
@@ -8,42 +8,6 @@ const connection = mysql.createConnection({
     password: "Hersh6624!",
     database: "employeeDB"
 });
-
-connection.connect((err) => {
-    if (err) throw err;
-    begin();
-});
-
-const begin = () => {
-    inquirer.prompt([
-        {
-            type: 'list',
-            message: "How may I assist you?",
-            choices: ["Add employee information", "Update employee information", "View employee information", "Delete employee information", "I'm all done"],
-            name: "choice"
-        }
-    ]).then((response) => {
-            switch (response.choice) {
-                case "Add employee information":
-                    addInfo();
-                    break;
-                case "Update employee information":
-                    updateInfo();
-                    break;
-                case "View employee information":
-                    //viewInfo();
-                    break;
-                case "Delete employee information":
-                    //deleteInfo();
-                    break;
-                case "I'm all done":
-                    connection.end();
-                    break;
-                default:
-                    begin();
-            };
-    });
-};
 
 const addInfo = () => {
     inquirer.prompt([
@@ -200,69 +164,7 @@ const addEmployee = () => {
     });
 };
 
-const updateInfo = () => {
-    inquirer.prompt([
-        {
-            type: 'list',
-            message: "What would you like to update?",
-            choices: ["Rename Department", "Update Role", "Update Employee"],
-            name: 'toUpdate'
-        }
-    ]).then((response) => {
-        switch (response.toUpdate) {
-            case "Rename Department":
-                renameDepartment();
-                break;
-            case "Update Role":
-                updateRole();
-                break;
-            case "Update Employee":
-                updateEmployee();
-                break;
-            default:
-                begin();
-        };
-    });
-};
-
-const renameDepartment = () => {
-    connection.query('SELECT * FROM department', (err, res) => {
-        if (err) throw err;
-        inquirer.prompt([
-            {
-                type: 'list',
-                message: "Which department would you like to rename?",
-                choices: res.map(department => department.name),
-                name: 'department'
-            },
-            {
-                type: 'input',
-                message: "What would you like to rename this department?",
-                name: 'newName'
-            }
-        ]).then((response) => {
-            let departmentID;
-            res.forEach(department => {
-                if (department.name === response.department) {
-                    departmentID = department.id;
-                };
-            });
-            connection.query(
-                "UPDATE department SET ? WHERE ?",
-                [
-                    {
-                        name: response.newName
-                    },
-                    {
-                        id: departmentID
-                    }
-                ],
-                (err2, res2) => {
-                    if (err2) throw err2;
-                    console.log(`Success! Renamed ${response.department} to ${response.newName} in the database.\n`);
-                    begin();
-                }
-            );
-        });
-    });
-};
+exports.addInfo = addInfo;
+exports.addDepartment = addDepartment;
+exports.addRole = addRole;
+exports.addEmployee = addEmployee;
