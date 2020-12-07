@@ -596,8 +596,29 @@ const viewInfo = () => {
 };
 
 const viewDepartments = () => {
-    connection.query("SELECT * FROM department", (err, res) => {
+    connection.query("SELECT name FROM department", (err, res) => {
         console.table(res);
         begin();
+    });
+};
+
+const viewRoles = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "What roles would you like to see?",
+            choices: ["All roles", "Specific department roles"],
+            name: 'choice'
+        }
+    ]).then((response) => {
+        if (response.choice === "Specific department roles") {
+            departmentRoles();
+        } else {
+            connection.query("SELECT title, salary FROM role", (err, res) => {
+                if (err) throw err;
+                console.table(res);
+                begin();
+            });
+        };
     });
 };
