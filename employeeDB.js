@@ -824,3 +824,29 @@ const deleteDepartment = () => {
         });
     });
 };
+
+const deleteRole = () => {
+    connection.query("SELECT title FROM role", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "What role would you like to delete?",
+                choices: res.map(role=>role.title),
+                name: "deleteChoice"
+            }
+        ]).then((response) => {
+            connection.query(
+                "DELETE FROM role WHERE ?",
+                {
+                    title: response.deleteChoice
+                },
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.log(`Success! ${response.deleteChoice} has been removed from the database.\n`);
+                    begin();
+                }
+            );
+        });
+    });
+};
