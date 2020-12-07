@@ -495,7 +495,7 @@ const employeeRole = employeeID => {
         inquirer.prompt([
             {
                 type: 'list',
-                message: "What role would you like to reassign this employee to?",
+                message: `What role would you like to reassign ${employeeID.first_name} ${employeeID.last_name} to?`,
                 choices: res.map(role=>role.title),
                 name: 'newRole'
             }
@@ -519,6 +519,49 @@ const employeeRole = employeeID => {
                 (err2, res2) => {
                     if (err2) throw err2;
                     console.log(`Success! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
+                    begin();
+                }
+            );
+        });
+    });
+};
+
+const employeeManager = employeeID => {
+    connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
+        let current;
+        res.forEach(manager => {
+            if (manager.id === employeeID.manager_id) {
+                current = `${manager.first_name} ${manager.last_name}`;
+            };
+        });
+        console.log(`${employeeID.first_name} ${employeeID.last_name}'s current manager is ${current}.\n`);
+        inquirer.prompt([
+            {
+                type: "list",
+                message: `Which manager would you like to reassign ${employeeID.first_name} ${employeeID.last_name} to?`,
+                choices: [...res.map(manager=>`${manager.first_name} ${manager.last_name}`), "This employee doesn't have a manager"],
+                name: 'newManager'
+            }
+        ]).then((response) => {
+            let newManagerID;
+            res.forEach(manager => {
+                if (`${manager.first_name} ${manager.last_name}` === response.newManager) {
+                    newManagerID = manager;
+                };
+            });
+            connection.query(
+                "UPDATE employee SET ? WHERE ?",
+                [
+                    {
+                        manager_id: newManagerID.id
+                    },
+                    {
+                        id: employeeID.id
+                    }
+                ],
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.log(`Success! Assigned ${newManagerID.first_name} ${newManagerID.last_name} as ${employeeID.first_name} ${employeeID.last_name}'s manager.\n`);
                     begin();
                 }
             );
