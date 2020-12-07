@@ -768,3 +768,48 @@ const employeeByRole = () => {
         });
     });
 };
+
+const employeeByManager = () => {
+    connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "Which manager's employees would you like to see?",
+                choices: res.map(manager => `${manager.first_name} ${manager.last_name}`),
+                name: 'managerChoice'
+            }
+        ]).then((response) => {
+            let managerID;
+            res.forEach(manager => {
+                if (`${manager.first_name} ${manager.last_name}` === response.managerChoice) {
+                    managerID = manager.id;
+                };
+            });
+            connection.query(
+                "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?",
+                managerID,
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    let employeeTable = [];
+                    res2.forEach(employee => {
+                        let empObj = {};
+                        empObj["ID #"] = employee.id;
+                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
+                        empObj["Job Title"] = employee.title;
+                        empObj.Department = employee.name;
+                        empObj.Salary = employee.salary;
+                        empObj.Manager = "This employee has no manager";
+                        res2.forEach(emp => {
+                            if (employee.manager_id === emp.id) {
+                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+                            };
+                        });
+                        employeeTable.push(empObj);
+                    });
+                    console.table(employeeTable);
+                }
+            )
+        })
+    })
+}
