@@ -28,7 +28,7 @@ const begin = () => {
                     addInfo();
                     break;
                 case "Update employee information":
-                    //updateInfo();
+                    updateInfo();
                     break;
                 case "View employee information":
                     //viewInfo();
@@ -200,3 +200,27 @@ const addEmployee = () => {
     });
 };
 
+const updateInfo = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "What would you like to update?",
+            choices: ["Update Department", "Update Role", "Update Employee"],
+            name: 'toUpdate'
+        }
+    ]).then((response) => {
+        switch (response.toUpdate) {
+            case "Update Department":
+                updateDepartment();
+                break;
+            case "Update Role":
+                updateRole();
+                break;
+            case "Update Employee":
+                updateEmployee();
+                break;
+            default:
+                begin();
+        };
+    });
+};
