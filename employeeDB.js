@@ -702,27 +702,69 @@ const employeeByDepartment = () => {
                 name: 'departmentChoice'
             }
         ]).then((response) => {
-            connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE department.name = ?",
-            response.departmentChoice,
-             (err2, res2) => {
-                 if (err2) throw err2;
-                let employeeTable = [];
-                res2.forEach(employee => {
-                    let empObj = {};
-                    empObj["ID #"] = employee.id;
-                    empObj.Name = `${employee.first_name} ${employee.last_name}`;
-                    empObj["Job Title"] = employee.title;
-                    empObj.Salary = employee.salary;
-                    empObj.Manager = "This employee has no manager";
-                    res2.forEach(emp => {
-                        if (employee.manager_id === emp.id) {
-                            empObj.Manager = `${emp.first_name} ${emp.last_name}`;
-                        };
+            connection.query(
+                "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE department.name = ?",
+                response.departmentChoice,
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    let employeeTable = [];
+                    res2.forEach(employee => {
+                        let empObj = {};
+                        empObj["ID #"] = employee.id;
+                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
+                        empObj["Job Title"] = employee.title;
+                        empObj.Department = employee.name;
+                        empObj.Salary = employee.salary;
+                        empObj.Manager = "This employee has no manager";
+                        res2.forEach(emp => {
+                            if (employee.manager_id === emp.id) {
+                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+                            };
+                        });
+                        employeeTable.push(empObj);
                     });
-                    employeeTable.push(empObj);
+                    console.table(employeeTable);
                 });
-                console.table(employeeTable);
-            });
+        });
+    });
+};
+
+const employeeByRole = () => {
+    connection.query("SELECT title FROM role", (err, res) => {
+        console.log(res);
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "View all employees from which role?",
+                choices: res.map(role=>role.title),
+                name: 'roleChoice'
+            }
+        ]).then((response) => {
+            connection.query(
+                "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE role.title = ?",
+                response.roleChoice,
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    let employeeTable = [];
+                    res2.forEach(employee => {
+                        let empObj = {};
+                        empObj["ID #"] = employee.id;
+                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
+                        empObj["Job Title"] = employee.title;
+                        empObj.Department = employee.name;
+                        empObj.Salary = employee.salary;
+                        empObj.Manager = "This employee has no manager";
+                        res2.forEach(emp => {
+                            if (employee.manager_id === emp.id) {
+                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+                            };
+                        });
+                        employeeTable.push(empObj);
+                    });
+                    console.table(employeeTable);
+                }
+            );
         });
     });
 };
