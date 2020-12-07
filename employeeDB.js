@@ -481,3 +481,47 @@ const employeeName = employeeID => {
         );
     });
 };
+
+const employeeRole = employeeID => {
+    connection.query("SELECT * FROM role", (err, res) => {
+        if (err) throw err;
+        let current;
+        res.forEach(role => {
+            if (role.id === employeeID.role_id) {
+                current = role.title;
+            };
+        });
+        console.log(`${employeeID.first_name} ${employeeID.last_name}'s current role is ${current}.\n`);
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "What role would you like to reassign this employee to?",
+                choices: res.map(role=>role.title),
+                name: 'newRole'
+            }
+        ]).then((response) => {
+            let newRoleID;
+            res.forEach(role => {
+                if (role.title === response.newRole) {
+                    newRoleID = role.id;
+                };
+            });
+            connection.query(
+                'UPDATE employee SET ? WHERE ?',
+                [
+                    {
+                        role_id: newRoleID
+                    },
+                    {
+                        id: employeeID.id
+                    }
+                ],
+                (err2, res2) => {
+                    if (err2) throw err2;
+                    console.log(`Success! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
+                    begin();
+                }
+            );
+        });
+    });
+};
