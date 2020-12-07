@@ -448,3 +448,36 @@ const updateEmployee = () => {
         });
     });
 };
+
+const employeeName = employeeID => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: "What is the updated first name of the employee?",
+            name: 'firstName'
+        },
+        {
+            type: 'input',
+            message: "What is the updated last name of the employee?",
+            name: 'lastName'
+        }
+    ]).then((response) => {
+        connection.query(
+            "UPDATE employee SET ? WHERE ?",
+            [
+                {
+                    first_name: response.firstName,
+                    last_name: response.lastName
+                },
+                {
+                    id: employeeID.id
+                }
+            ],
+            (err, res) => {
+                if (err) throw err;
+                console.log(`Success! Updated ${response.firstName} ${response.lastName}'s name in the database.\n`);
+                begin();
+            }
+        );
+    });
+};
