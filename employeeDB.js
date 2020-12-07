@@ -142,7 +142,7 @@ const addEmployee = () => {
             console.log("No roles on file, please first create a role and then you can add an employee.\n");
             return begin();
         };
-        connection.query("SELECT employee.id, employee.first_name, employee.last_name, employee.role_id FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title = 'manager'", (err2, res2) => {
+        connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err2, res2) => {
             inquirer.prompt([
                 {
                     type: 'input',
