@@ -287,8 +287,7 @@ const updateRole = () => {
             let roleID = {};
             res.forEach(role => {
                 if (role.title === response.toUpdate) {
-                    roleID.id = role.id;
-                    roleID.title = role.title;
+                    roleID = role;
                 };
             });
             switch (response.action) {
@@ -329,6 +328,34 @@ const renameRole = roleID => {
             (err, res) => {
                 if (err) throw err;
                 console.log(`Success! Renamed ${roleID.title} to ${response.newName} in the database.\n`);
+                begin();
+            }
+        );
+    });
+};
+
+const updateSalary = roleID => {
+    console.log(`The current salary for this role is $${roleID.salary}.\n`);
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: "What is the updated salary for this role?",
+            name: 'newSalary'
+        }
+    ]).then((response) => {
+        connection.query(
+            "UPDATE role SET ? WHERE ?",
+            [
+                {
+                    salary: response.newSalary
+                },
+                {
+                    id: roleID.id
+                }
+            ],
+            (err, res) => {
+                if (err) throw err;
+                console.log(`Success! Updated the salary of ${roleID.title} in the database to $${response.newSalary}.\n`);
                 begin();
             }
         );
