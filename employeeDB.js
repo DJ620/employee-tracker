@@ -31,7 +31,7 @@ const begin = () => {
                     updateInfo();
                     break;
                 case "View information":
-                    //viewInfo();
+                    viewInfo();
                     break;
                 case "Delete information":
                     //deleteInfo();
@@ -566,5 +566,30 @@ const employeeManager = employeeID => {
                 }
             );
         });
+    });
+};
+
+const viewInfo = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "What information would you like to see?",
+            choices: ["Departments", "Roles", "Employees"],
+            name: 'toView'
+        }
+    ]).then((response) => {
+        switch (response.toView) {
+            case "Departments":
+                viewDepartments();
+                break;
+            case "Roles":
+                viewRoles();
+                break;
+            case "Employees":
+                viewEmployees();
+                break;
+            default:
+                begin();
+        };
     });
 };
