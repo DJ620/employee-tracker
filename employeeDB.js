@@ -409,3 +409,42 @@ const switchDepartment = roleID => {
         });
     });
 };
+
+const updateEmployee = () => {
+    connection.query("SELECT * FROM employee", (err, res) => {
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "Which employee's information would you like to update?",
+                choices: res.map(employee=>`${employee.first_name} ${employee.last_name}`),
+                name: 'toUpdate'
+            },
+            {
+                type: 'list',
+                message: "How would you like to update this employee's information?",
+                choices: ["Update the employee's name", "Update the employee's role", "Update the employee's manager"],
+                name: 'action'
+            }
+        ]).then((response) => {
+            let employeeID = {};
+            res.forEach(employee => {
+                if (`${employee.first_name} ${employee.last_name}` === response.toUpdate) {
+                    employeeID = employee;
+                };
+            });
+            switch(response.action) {
+                case "Update the employee's name":
+                    employeeName(employeeID);
+                    break;
+                case "Update the employee's role":
+                    employeeRole(employeeID);
+                    break;
+                case "Update the employee's manager":
+                    employeeManager(employeeID);
+                    break;
+                default:
+                    begin();
+            };
+        });
+    });
+};
