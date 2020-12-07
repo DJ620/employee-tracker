@@ -266,3 +266,71 @@ const renameDepartment = () => {
         });
     });
 };
+
+const updateRole = () => {
+    connection.query("SELECT * FROM role", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "What role would you like to update?",
+                choices: res.map(role=>role.title),
+                name: 'toUpdate'
+            },
+            {
+                type: 'list',
+                Message: "What would you like to update about this role?",
+                choices: ["Rename role", "Update salary", "Switch department"],
+                name: 'action'
+            }
+        ]).then((response) => {
+            let roleID = {};
+            res.forEach(role => {
+                if (role.title === response.toUpdate) {
+                    roleID.id = role.id;
+                    roleID.title = role.title;
+                };
+            });
+            switch (response.action) {
+                case "Rename role":
+                    renameRole(roleID);
+                    break;
+                case "Update salary":
+                    updateSalary(roleID);
+                    break;
+                case "Switch department":
+                    switchDepartment(roleID);
+                    break;
+                default:
+                    begin();
+            };
+        });
+    });
+};
+
+const renameRole = roleID => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: "What would you like to rename this role?",
+            name: "newName"
+        }
+    ]).then((response) => {
+        connection.query(
+            "UPDATE role SET ? WHERE ?",
+            [
+                {
+                    title: response.newName
+                },
+                {
+                    id: roleID.id
+                }
+            ],
+            (err, res) => {
+                if (err) throw err;
+                console.log(`Success! Renamed ${roleID.title} to ${response.newName} in the database.\n`);
+                begin();
+            }
+        );
+    });
+};
