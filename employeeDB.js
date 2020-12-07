@@ -668,14 +668,15 @@ const viewEmployees = () => {
                 break;
             default:
                 connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id", (err, res) => {
+                    if (err) throw err;
                     let employeeTable = [];
                     res.forEach(employee => {
                         let empObj = {};
                         empObj["ID #"] = employee.id;
                         empObj.Name = `${employee.first_name} ${employee.last_name}`;
                         empObj["Job Title"] = employee.title;
-                        empObj.Salary = employee.salary;
                         empObj.Department = employee.name;
+                        empObj.Salary = employee.salary;
                         empObj.Manager = "This employee has no manager";
                         res.forEach(emp => {
                             if (employee.manager_id === emp.id) {
@@ -685,7 +686,43 @@ const viewEmployees = () => {
                         employeeTable.push(empObj);
                     });
                     console.table(employeeTable);
-                })
-        }       
-    })
-}
+                });
+        };       
+    });
+};
+
+const employeeByDepartment = () => {
+    connection.query("SELECT name FROM department", (err, res) => {
+        if (err) throw err;
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "Which department's employees would you like to see?",
+                choices: res,
+                name: 'departmentChoice'
+            }
+        ]).then((response) => {
+            connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE department.name = ?",
+            response.departmentChoice,
+             (err2, res2) => {
+                 if (err2) throw err2;
+                let employeeTable = [];
+                res2.forEach(employee => {
+                    let empObj = {};
+                    empObj["ID #"] = employee.id;
+                    empObj.Name = `${employee.first_name} ${employee.last_name}`;
+                    empObj["Job Title"] = employee.title;
+                    empObj.Salary = employee.salary;
+                    empObj.Manager = "This employee has no manager";
+                    res2.forEach(emp => {
+                        if (employee.manager_id === emp.id) {
+                            empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+                        };
+                    });
+                    employeeTable.push(empObj);
+                });
+                console.table(employeeTable);
+            });
+        });
+    });
+};
