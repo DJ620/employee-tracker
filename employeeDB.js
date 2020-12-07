@@ -35,7 +35,7 @@ const begin = () => {
                     viewInfo();
                     break;
                 case "Delete information":
-                    //deleteInfo();
+                    deleteInfo();
                     break;
                 case "I'm all done":
                     connection.end();
@@ -667,6 +667,7 @@ const employeeTable = (employeeArr) => {
             employeeTable.push(empObj);
         });
         console.table(employeeTable);
+        begin();
     });
 };
 
@@ -693,7 +694,6 @@ const viewEmployees = () => {
                 connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id", (err, res) => {
                     if (err) throw err;
                     employeeTable(res);
-                    begin();
                 });
         };       
     });
@@ -716,7 +716,6 @@ const employeeByDepartment = () => {
                 (err2, res2) => {
                     if (err2) throw err2;
                     employeeTable(res2);
-                    begin();
                 });
         });
     });
@@ -740,7 +739,6 @@ const employeeByRole = () => {
                 (err2, res2) => {
                     if (err2) throw err2;
                     employeeTable(res2);
-                    begin();
                 }
             );
         });
@@ -770,9 +768,33 @@ const employeeByManager = () => {
                 (err2, res2) => {
                     if (err2) throw err2;
                     employeeTable(res2);
-                    begin();
                 }
             );
         });
+    });
+};
+
+const deleteInfo = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "What would you like to delete?",
+            choices: ["Delete a department", "Delete a role", "Delete an employee"],
+            name: 'action'
+        }
+    ]).then((response) => {
+        switch (response.action) {
+            case "Delete a department":
+                deleteDepartment();
+                break;
+            case "Delete a role":
+                deleteRole();
+                break;
+            case "Delete an employee":
+                deleteEmployee();
+                break;
+            default:
+                begin();
+        };
     });
 };
