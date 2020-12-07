@@ -19,21 +19,21 @@ const begin = () => {
         {
             type: 'list',
             message: "How may I assist you?",
-            choices: ["Add employee information", "Update employee information", "View employee information", "Delete employee information", "I'm all done"],
+            choices: ["Add information", "Update information", "View information", "Delete information", "I'm all done"],
             name: "choice"
         }
     ]).then((response) => {
             switch (response.choice) {
-                case "Add employee information":
+                case "Add information":
                     addInfo();
                     break;
-                case "Update employee information":
+                case "Update information":
                     updateInfo();
                     break;
-                case "View employee information":
+                case "View information":
                     //viewInfo();
                     break;
-                case "Delete employee information":
+                case "Delete information":
                     //deleteInfo();
                     break;
                 case "I'm all done":
@@ -205,18 +205,18 @@ const updateInfo = () => {
         {
             type: 'list',
             message: "What would you like to update?",
-            choices: ["Rename Department", "Update Role", "Update Employee"],
+            choices: ["Change name of department", "Update role information", "Update employee information"],
             name: 'toUpdate'
         }
     ]).then((response) => {
         switch (response.toUpdate) {
-            case "Rename Department":
+            case "Change name of department":
                 renameDepartment();
                 break;
-            case "Update Role":
+            case "Update role information":
                 updateRole();
                 break;
-            case "Update Employee":
+            case "Update employee information":
                 updateEmployee();
                 break;
             default:
@@ -359,5 +359,53 @@ const updateSalary = roleID => {
                 begin();
             }
         );
+    });
+};
+
+const switchDepartment = roleID => {
+    connection.query("SELECT * FROM department", (err, res) => {
+        let current;
+        res.forEach(department => {
+            if (department.id === roleID.department_id) {
+                current = department.name;
+            };
+        });
+        console.log(`This role is currently assigned to the ${current} department.\n`);
+        inquirer.prompt([
+            {
+                type: 'list',
+                message: "What department would you like to reassign this role to?",
+                choices: res.map(department => department.name),
+                name: 'newDepartment'
+            }
+        ]).then((response) => {
+            let newID;
+            res.forEach(department => {
+                if (department.name === response.newDepartment) {
+                    newID = department.id;
+                };
+            });
+            if (newID === roleID.id) {
+                console.log(`${roleID.title} is already assigned to ${response.newDepartment}.\n`);
+                begin();
+            } else {
+                connection.query(
+                    "UPDATE role SET ? WHERE ?",
+                    [
+                        {
+                            department_id: newID
+                        },
+                        {
+                            id: roleID.id
+                        }
+                    ],
+                    (err2, res2) => {
+                        if (err2) throw err2;
+                        console.log(`Success! Reassigned ${roleID.title} to the ${response.newDepartment} department.\n`);
+                        begin();
+                    }
+                );
+            };
+        });
     });
 };
