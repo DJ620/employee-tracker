@@ -1,6 +1,7 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
+const DB = require("./db");
 
 const connection = mysql.createConnection({
     host: "localhost",
@@ -14,6 +15,9 @@ connection.connect((err) => {
     if (err) throw err;
     begin();
 });
+
+const data = new DB(connection);
+console.log(data.departmentInfo());
 
 const begin = () => {
     inquirer.prompt([
@@ -71,7 +75,9 @@ const addInfo = () => {
     });
 };
 
-const addDepartment = () => {
+const addDepartment = async () => {
+    let departments = await data.departmentInfo();
+    console.log(departments);
     inquirer.prompt([
         {
             type: 'input',
@@ -226,7 +232,7 @@ const updateInfo = () => {
     });
 };
 
-const renameDepartment = () => {
+const renameDepartment = async () => {
     connection.query('SELECT * FROM department', (err, res) => {
         if (err) throw err;
         inquirer.prompt([
