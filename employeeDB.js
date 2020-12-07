@@ -647,6 +647,29 @@ const departmentRoles = () => {
     });
 };
 
+const employeeTable = (employeeArr) => {
+    connection.query("SELECT * FROM employee", (err, res) => {
+        if (err) throw err;
+        let employeeTable = [];
+        employeeArr.forEach(employee => {
+            let empObj = {};
+            empObj["ID #"] = employee.id;
+            empObj.Name = `${employee.first_name} ${employee.last_name}`;
+            empObj["Job Title"] = employee.title;
+            empObj.Department = employee.name;
+            empObj.Salary = employee.salary;
+            empObj.Manager = "This employee has no manager";
+            res.forEach(emp => {
+                if (employee.manager_id === emp.id) {
+                    empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+                };
+            });
+            employeeTable.push(empObj);
+        });
+        console.table(employeeTable);
+    });
+};
+
 const viewEmployees = () => {
     inquirer.prompt([
         {
@@ -669,23 +692,8 @@ const viewEmployees = () => {
             default:
                 connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id", (err, res) => {
                     if (err) throw err;
-                    let employeeTable = [];
-                    res.forEach(employee => {
-                        let empObj = {};
-                        empObj["ID #"] = employee.id;
-                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
-                        empObj["Job Title"] = employee.title;
-                        empObj.Department = employee.name;
-                        empObj.Salary = employee.salary;
-                        empObj.Manager = "This employee has no manager";
-                        res.forEach(emp => {
-                            if (employee.manager_id === emp.id) {
-                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
-                            };
-                        });
-                        employeeTable.push(empObj);
-                    });
-                    console.table(employeeTable);
+                    employeeTable(res);
+                    begin();
                 });
         };       
     });
@@ -707,23 +715,8 @@ const employeeByDepartment = () => {
                 response.departmentChoice,
                 (err2, res2) => {
                     if (err2) throw err2;
-                    let employeeTable = [];
-                    res2.forEach(employee => {
-                        let empObj = {};
-                        empObj["ID #"] = employee.id;
-                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
-                        empObj["Job Title"] = employee.title;
-                        empObj.Department = employee.name;
-                        empObj.Salary = employee.salary;
-                        empObj.Manager = "This employee has no manager";
-                        res2.forEach(emp => {
-                            if (employee.manager_id === emp.id) {
-                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
-                            };
-                        });
-                        employeeTable.push(empObj);
-                    });
-                    console.table(employeeTable);
+                    employeeTable(res2);
+                    begin();
                 });
         });
     });
@@ -746,23 +739,8 @@ const employeeByRole = () => {
                 response.roleChoice,
                 (err2, res2) => {
                     if (err2) throw err2;
-                    let employeeTable = [];
-                    res2.forEach(employee => {
-                        let empObj = {};
-                        empObj["ID #"] = employee.id;
-                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
-                        empObj["Job Title"] = employee.title;
-                        empObj.Department = employee.name;
-                        empObj.Salary = employee.salary;
-                        empObj.Manager = "This employee has no manager";
-                        res2.forEach(emp => {
-                            if (employee.manager_id === emp.id) {
-                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
-                            };
-                        });
-                        employeeTable.push(empObj);
-                    });
-                    console.table(employeeTable);
+                    employeeTable(res2);
+                    begin();
                 }
             );
         });
@@ -791,25 +769,10 @@ const employeeByManager = () => {
                 managerID,
                 (err2, res2) => {
                     if (err2) throw err2;
-                    let employeeTable = [];
-                    res2.forEach(employee => {
-                        let empObj = {};
-                        empObj["ID #"] = employee.id;
-                        empObj.Name = `${employee.first_name} ${employee.last_name}`;
-                        empObj["Job Title"] = employee.title;
-                        empObj.Department = employee.name;
-                        empObj.Salary = employee.salary;
-                        empObj.Manager = "This employee has no manager";
-                        res2.forEach(emp => {
-                            if (employee.manager_id === emp.id) {
-                                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
-                            };
-                        });
-                        employeeTable.push(empObj);
-                    });
-                    console.table(employeeTable);
+                    employeeTable(res2);
+                    begin();
                 }
-            )
-        })
-    })
-}
+            );
+        });
+    });
+};
