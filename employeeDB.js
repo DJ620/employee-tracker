@@ -534,7 +534,7 @@ const employeeTable = async employeeArr => {
         empObj.Name = `${employee.first_name} ${employee.last_name}`;
         empObj["Job Title"] = employee.title;
         empObj.Department = employee.name;
-        empObj.Salary = employee.salary;
+        empObj.Salary = "$" + employee.salary;
         empObj.Manager = "This employee has no manager";
         emps.forEach(emp => {
             if (employee.manager_id === emp.id) {
@@ -697,3 +697,20 @@ const deleteEmployee = async () => {
         begin();
     });
 };
+
+const budgets = async () => {
+    const deps = await db.tableInfo("department");
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "Which department's total utilized budget would you like to see?",
+            choices: deps.map(department => department.name),
+            name: "departmentChoice"
+        }
+    ]).then(async (response) => {
+        const emps = await db.innerJoin("department.name", response.departmentChoice);
+        let budget = emps.map(employee => employee.salary).reduce((a, b) => a + b);
+        console.log(`\nThe total utilized budget for the ${response.departmentChoice} department is $${budget}.\n`);
+        employeeTable(emps);
+    })
+}
