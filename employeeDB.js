@@ -1,7 +1,12 @@
+// Dependencies=======================================================================================================
+
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
+// File that contains a class with all connection.querys as methods
 const db = require("./db");
+
+// MySQL Connection ==================================================================================================
 
 const connection = mysql.createConnection({
     host: "localhost",
@@ -15,6 +20,8 @@ connection.connect((err) => {
     if (err) throw err;
     begin();
 });
+
+// Inquirer and Query functions=======================================================================================
 
 const begin = () => {
     inquirer.prompt([
@@ -46,6 +53,8 @@ const begin = () => {
             };
     });
 };
+
+// Functions to add to database=======================================================================================
 
 const addInfo = () => {
     inquirer.prompt([
@@ -180,6 +189,8 @@ const addEmployee = async () => {
         });
     });
 };
+
+// Functions to update database=======================================================================================
 
 const updateInfo = () => {
     inquirer.prompt([
@@ -456,6 +467,8 @@ const employeeManager = async employeeID => {
     });
 };
 
+// Functions to view info=============================================================================================
+
 const viewInfo = () => {
     inquirer.prompt([
         {
@@ -492,6 +505,23 @@ const viewDepartments = async () => {
     });
     console.log("");
     begin();
+};
+
+const budgets = async () => {
+    const deps = await db.tableInfo("department");
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "Which department's total utilized budget would you like to see?",
+            choices: deps.map(department => department.name),
+            name: "departmentChoice"
+        }
+    ]).then(async (response) => {
+        const emps = await db.innerJoin("department.name", response.departmentChoice);
+        let budget = emps.map(employee => employee.salary).reduce((a, b) => a + b);
+        console.log(`\nThe total utilized budget for the ${response.departmentChoice} department is $${budget}.\n`);
+        employeeTable(emps);
+    });
 };
 
 const viewRoles = () => {
@@ -628,6 +658,8 @@ const employeeByManager = async () => {
     });
 };
 
+// Functions to delete info===========================================================================================
+
 const deleteInfo = () => {
     inquirer.prompt([
         {
@@ -701,20 +733,3 @@ const deleteEmployee = async () => {
         begin();
     });
 };
-
-const budgets = async () => {
-    const deps = await db.tableInfo("department");
-    inquirer.prompt([
-        {
-            type: 'list',
-            message: "Which department's total utilized budget would you like to see?",
-            choices: deps.map(department => department.name),
-            name: "departmentChoice"
-        }
-    ]).then(async (response) => {
-        const emps = await db.innerJoin("department.name", response.departmentChoice);
-        let budget = emps.map(employee => employee.salary).reduce((a, b) => a + b);
-        console.log(`\nThe total utilized budget for the ${response.departmentChoice} department is $${budget}.\n`);
-        employeeTable(emps);
-    })
-}
