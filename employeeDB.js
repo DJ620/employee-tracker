@@ -243,7 +243,7 @@ const renameDepartment = async () => {
                 departmentID = department.id;
             };
         });
-        // The db.updateInfo method updates any table passed in in the database
+        // The db.updateInfo method updates any table passed into it in the database
         await db.updateInfo("department", [{name: response.newName}, {id: departmentID}]);
         console.log(`\nSuccess! Renamed ${response.department} to ${response.newName} in the database.\n`);
         begin();
@@ -266,7 +266,8 @@ const updateRole = async () => {
             name: 'action'
         }
     ]).then((response) => {
-        let roleID = {};
+        // Sets roleID to the role the user has chosen
+        let roleID;
         roles.forEach(role => {
             if (role.title === response.toUpdate) {
                 roleID = role;
@@ -367,7 +368,8 @@ const updateEmployee = async () => {
             name: 'action'
         }
     ]).then((response) => {
-        let employeeID = {};
+        // Selects the employee the user has chosen and passes it into one of the employee functions
+        let employeeID;
         emp.forEach(employee => {
             if (`${employee.first_name} ${employee.last_name}` === response.toUpdate) {
                 employeeID = employee;
