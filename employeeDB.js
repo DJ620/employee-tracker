@@ -120,21 +120,27 @@ const addRole = async () => {
                 choices: dept.map(x => x.name),
                 name: 'department'
             }
-        ]).then((response) => {
-            let department = res.filter(x=>x.name === response.department);
-            connection.query(
-                "INSERT INTO role SET ?",
-                {
-                    title: response.role,
-                    salary: response.salary,
-                    department_id: department[0].id
-                },
-                (err, res) => {
-                    if (err) throw err;
+        ]).then(async (response) => {
+            let department = dept.filter(x=>x.name === response.department)[0];
+            // connection.query(
+            //     "INSERT INTO role SET ?",
+            //     {
+            //         title: response.role,
+            //         salary: response.salary,
+            //         department_id: department[0].id
+            //     },
+            //     (err, res) => {
+            //         if (err) throw err;
+            await db.addInfo("role",
+                    {
+                        title: response.role,
+                        salary: response.salary,
+                        department_id: department.id
+                    });
                     console.log(`Success! Added ${response.role} to the database.\n`);
                     begin();
-                }
-            );
+                //}
+            //);
         });
     //});
 };
@@ -143,6 +149,7 @@ const addEmployee = async () => {
     // connection.query("SELECT * FROM role", (err, res) => {
     //     if (err) throw err;
     let roles = await db.tableInfo("role");
+    let managers = await db.viewManagers();
         if (roles.length < 1) {
             console.log("No roles on file, please first create a role and then you can add an employee.\n");
             return begin();
@@ -168,10 +175,10 @@ const addEmployee = async () => {
                 {
                     type: 'list',
                     message: "Who is the employee's manager?",
-                    choices: [...res.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
+                    choices: [...managers.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
                     name: 'manager'
                 }
-            ]).then((response) => {
+            ]).then(async (response) => {
                 let roleID; 
                 let managerID;
                 roles.forEach(role => {
@@ -180,26 +187,33 @@ const addEmployee = async () => {
                     };
                 });
                 if (response.manager !== "This employee doesn't have a manager") {
-                    res.forEach(employee => {
+                    managers.forEach(employee => {
                         if (`${employee.first_name} ${employee.last_name}` === response.manager) {
                             managerID = employee.id;
                         };
                     });
                 };
-                connection.query(
-                    "INSERT INTO employee SET ?",
-                    {
-                        first_name: response.firstName,
-                        last_name: response.lastName,
-                        role_id: roleID,
-                        manager_id: managerID
-                    },
-                    (err2, res2) => {
-                        if (err2) throw err2;
+                // connection.query(
+                //     "INSERT INTO employee SET ?",
+                //     {
+                        // first_name: response.firstName,
+                        // last_name: response.lastName,
+                        // role_id: roleID,
+                        // manager_id: managerID
+                //     },
+                //     (err2, res2) => {
+                //         if (err2) throw err2;
+                await db.addInfo("employee",
+                {
+                    first_name: response.firstName,
+                    last_name: response.lastName,
+                    role_id: roleID,
+                    manager_id: managerID
+                });
                         console.log(`Success! Added ${response.firstName} ${response.lastName} to the database.\n`);
                         begin();
-                    }
-                );
+                    //}
+                //);
             });
         });
     //});
@@ -246,29 +260,30 @@ const renameDepartment = async () => {
                 message: "What would you like to rename this department?",
                 name: 'newName'
             }
-        ]).then((response) => {
+        ]).then(async (response) => {
             let departmentID;
             dept.forEach(department => {
                 if (department.name === response.department) {
                     departmentID = department.id;
                 };
             });
-            connection.query(
-                "UPDATE department SET ? WHERE ?",
-                [
-                    {
-                        name: response.newName
-                    },
-                    {
-                        id: departmentID
-                    }
-                ],
-                (err, res) => {
-                    if (err) throw err;
+            // connection.query(
+            //     "UPDATE department SET ? WHERE ?",
+            //     [
+            //         {
+            //             name: response.newName
+            //         },
+            //         {
+            //             id: departmentID
+            //         }
+            //     ],
+            //     (err, res) => {
+            //         if (err) throw err;
+            await db.updateInfo("department", [{name: response.newName}, {id: departmentID}]);
                     console.log(`Success! Renamed ${response.department} to ${response.newName} in the database.\n`);
                     begin();
-                }
-            );
+            //     }
+            // );
         });
     //});
 };

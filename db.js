@@ -30,5 +30,8 @@ class DB {
         return this.connection.query(
             `INSERT INTO ${table} SET ?`, info);
     };
+    updateInfo(table, params) {
+        return this.connection.query(`UPDATE ${table} SET ? WHERE ?`, params);
+    };
 };
 module.exports = new DB(connection);
