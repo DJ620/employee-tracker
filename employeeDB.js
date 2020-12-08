@@ -518,16 +518,10 @@ const departmentRoles = async () => {
             choices: depNames,
             name: 'departmentChoice'
         }
-    ]).then((response) => {
-        connection.query(
-            `SELECT role.title, role.salary FROM role LEFT JOIN department ON department.id = role.department_id WHERE department.name = ?`,
-            response.departmentChoice,
-            (err, res) => {
-                if (err) throw err;
-                console.table(res);
-                begin();                
-            }
-        );
+    ]).then(async (response) => {
+        const depRoles = await db.rolesByDepartment(response.departmentChoice);
+        console.table(depRoles);
+        begin();                
     });
 };
 
@@ -561,7 +555,7 @@ const viewEmployees = () => {
             choices: ["By department", "By role", "By manager", "All employees"],
             name: "choice"
         }
-    ]).then((response) => {
+    ]).then(async (response) => {
         switch (response.choice) {
             case "By department":
                 employeeByDepartment();
@@ -573,10 +567,8 @@ const viewEmployees = () => {
                 employeeByManager();
                 break;
             default:
-                connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id", (err, res) => {
-                    if (err) throw err;
-                    employeeTable(res);
-                });
+                const emps = await db.innerJoin();
+                employeeTable(emps);
         };       
     });
 };
@@ -590,14 +582,9 @@ const employeeByDepartment = async () => {
             choices: depNames,
             name: 'departmentChoice'
         }
-    ]).then((response) => {
-        connection.query(
-            "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE department.name = ?",
-            response.departmentChoice,
-            (err, res) => {
-                if (err) throw err;
-                employeeTable(res);
-            });
+    ]).then(async (response) => {
+        const emps = await db.innerJoin("department.name", response.departmentChoice);
+        employeeTable(emps);
     });
 };
 
@@ -610,15 +597,9 @@ const employeeByRole = async () => {
             choices: roleTitles.map(role=>role.title),
             name: 'roleChoice'
         }
-    ]).then((response) => {
-        connection.query(
-            "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE role.title = ?",
-            response.roleChoice,
-            (err, res) => {
-                if (err) throw err;
-                employeeTable(res);
-            }
-        );
+    ]).then(async (response) => {
+        const emps = await db.innerJoin("role.title", response.roleChoice);
+        employeeTable(emps);
     });
 };
 
@@ -631,21 +612,15 @@ const employeeByManager = async () => {
             choices: managers.map(manager => `${manager.first_name} ${manager.last_name}`),
             name: 'managerChoice'
         }
-    ]).then((response) => {
+    ]).then(async (response) => {
         let managerID;
         managers.forEach(manager => {
             if (`${manager.first_name} ${manager.last_name}` === response.managerChoice) {
                 managerID = manager.id;
             };
         });
-        connection.query(
-            "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?",
-            managerID,
-            (err, res) => {
-                if (err) throw err;
-                employeeTable(res);
-            }
-        );
+        const emps = await db.innerJoin("employee.manager_id", managerID);
+        employeeTable(emps);
     });
 };
 
