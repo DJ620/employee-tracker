@@ -88,6 +88,7 @@ const addDepartment = () => {
             message: "What is the name of the new department?",
             name: 'department'
         }
+        // Async callback function to await the db.addInfo method which adds data to the table passed in
     ]).then (async (response) => {
         await db.addInfo("department", {name: response.department});
         console.log(`\nSuccess! Added ${response.department} to the database.\n`);
@@ -96,6 +97,7 @@ const addDepartment = () => {
 };
 
 const addRole = async () => {
+    // The db.tableInfo method calls all data from the table passed in
     let dept = await db.tableInfo("department");
     if (dept.length < 1) {
         console.log("\nNo departments on file, please first create a department and then you can add a role.\n");
@@ -119,6 +121,7 @@ const addRole = async () => {
             name: 'department'
         }
     ]).then(async (response) => {
+        // Selecting the department the user has chosen and passing it into the db.addInfo method
         let department = dept.filter(x=>x.name === response.department)[0];
         await db.addInfo("role",
                 {
@@ -133,60 +136,61 @@ const addRole = async () => {
 
 const addEmployee = async () => {
     let roles = await db.tableInfo("role");
+    // The db.viewManagers method returns all employees whose role has the word "Manager" in it
     let managers = await db.viewManagers();
     if (roles.length < 1) {
         console.log("\nNo roles on file, please first create a role and then you can add an employee.\n");
         return begin();
     };
-    connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
-        inquirer.prompt([
-            {
-                type: 'input',
-                message: "What is the employee's first name?",
-                name: "firstName"
-            },
-            {
-                type: 'input',
-                message: "What is the employee's last name?",
-                name: "lastName"
-            },
-            {
-                type: 'list',
-                message: "What is the employee's role?",
-                choices: roles.map(role=>role.title),
-                name: 'role'
-            },
-            {
-                type: 'list',
-                message: "Who is the employee's manager?",
-                choices: [...managers.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
-                name: 'manager'
-            }
-        ]).then(async (response) => {
-            let roleID; 
-            let managerID;
-            roles.forEach(role => {
-                if (role.title === response.role) {
-                    roleID = role.id;
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: "What is the employee's first name?",
+            name: "firstName"
+        },
+        {
+            type: 'input',
+            message: "What is the employee's last name?",
+            name: "lastName"
+        },
+        {
+            type: 'list',
+            message: "What is the employee's role?",
+            choices: roles.map(role=>role.title),
+            name: 'role'
+        },
+        {
+            type: 'list',
+            message: "Who is the employee's manager?",
+            choices: [...managers.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
+            name: 'manager'
+        }
+    ]).then(async (response) => {
+        let roleID; 
+        let managerID;
+        // Selecting the user's chosen role id from all roles in the database
+        roles.forEach(role => {
+            if (role.title === response.role) {
+                roleID = role.id;
+            };
+        });
+        // If the employee does have a manager, this sets managerID to that manager's id
+        if (response.manager !== "This employee doesn't have a manager") {
+            managers.forEach(employee => {
+                if (`${employee.first_name} ${employee.last_name}` === response.manager) {
+                    managerID = employee.id;
                 };
             });
-            if (response.manager !== "This employee doesn't have a manager") {
-                managers.forEach(employee => {
-                    if (`${employee.first_name} ${employee.last_name}` === response.manager) {
-                        managerID = employee.id;
-                    };
-                });
-            };
-            await db.addInfo("employee",
-            {
-                first_name: response.firstName,
-                last_name: response.lastName,
-                role_id: roleID,
-                manager_id: managerID
-            });
-            console.log(`\nSuccess! Added ${response.firstName} ${response.lastName} to the database.\n`);
-            begin();
+        };
+        await db.addInfo("employee",
+        {
+            first_name: response.firstName,
+            last_name: response.lastName,
+            role_id: roleID,
+            manager_id: managerID
         });
+        console.log(`\nSuccess! Added ${response.firstName} ${response.lastName} to the database.\n`);
+        begin();
     });
 };
 
@@ -232,12 +236,14 @@ const renameDepartment = async () => {
             name: 'newName'
         }
     ]).then(async (response) => {
+        // Selects the user's chosen department id from all departments
         let departmentID;
         dept.forEach(department => {
             if (department.name === response.department) {
                 departmentID = department.id;
             };
         });
+        // The db.updateInfo method updates any table passed in in the database
         await db.updateInfo("department", [{name: response.newName}, {id: departmentID}]);
         console.log(`\nSuccess! Renamed ${response.department} to ${response.newName} in the database.\n`);
         begin();
