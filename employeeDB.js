@@ -16,7 +16,7 @@ connection.connect((err) => {
     begin();
 });
 
-const begin = async () => {
+const begin = () => {
     inquirer.prompt([
         {
             type: 'list',
@@ -286,7 +286,7 @@ const renameRole = roleID => {
 };
 
 const updateSalary = roleID => {
-    console.log(`The current salary for this role is $${roleID.salary}.\n`);
+    console.log(`\nThe current salary for this role is $${roleID.salary}.\n`);
     inquirer.prompt([
         {
             type: 'input',
@@ -485,8 +485,12 @@ const viewInfo = () => {
 };
 
 const viewDepartments = async () => {
-    const depNames = await db.customInfo("name", "department");
-    console.table(depNames);
+    const depNames = await db.tableInfo("department");
+    console.log(`\nDepartments:\n`);
+    depNames.map(department => department.name).forEach(name => {
+        console.log(name);
+    });
+    console.log("");
     begin();
 };
 

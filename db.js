@@ -27,7 +27,7 @@ class DB {
     };
 
     viewManagers() {
-        return this.connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'");
+        return this.connection.query("SELECT employee.id, employee.first_name employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'");
     };
 
     rolesByDepartment(department) {
@@ -50,9 +50,10 @@ class DB {
     updateInfo(table, params) {
         return this.connection.query(`UPDATE ${table} SET ? WHERE ?`, params);
     };
-    
+
     deleteInfo(table, info) {
         return this.connection.query(`DELETE FROM ${table} WHERE ?`, info);
     };
+
 };
 module.exports = new DB(connection);
