@@ -336,23 +336,24 @@ const renameRole = roleID => {
             message: "What would you like to rename this role?",
             name: "newName"
         }
-    ]).then((response) => {
-        connection.query(
-            "UPDATE role SET ? WHERE ?",
-            [
-                {
-                    title: response.newName
-                },
-                {
-                    id: roleID.id
-                }
-            ],
-            (err, res) => {
-                if (err) throw err;
+    ]).then(async (response) => {
+        // connection.query(
+        //     "UPDATE role SET ? WHERE ?",
+        //     [
+        //         {
+        //             title: response.newName
+        //         },
+        //         {
+        //             id: roleID.id
+        //         }
+        //     ],
+        //     (err, res) => {
+        //         if (err) throw err;
+        await db.updateInfo("role", [{title: response.newName}, {id: roleID.id}]);
                 console.log(`Success! Renamed ${roleID.title} to ${response.newName} in the database.\n`);
                 begin();
-            }
-        );
+        //     }
+        // );
     });
 };
 
@@ -364,23 +365,24 @@ const updateSalary = roleID => {
             message: "What is the updated salary for this role?",
             name: 'newSalary'
         }
-    ]).then((response) => {
-        connection.query(
-            "UPDATE role SET ? WHERE ?",
-            [
-                {
-                    salary: response.newSalary
-                },
-                {
-                    id: roleID.id
-                }
-            ],
-            (err, res) => {
-                if (err) throw err;
+    ]).then(async (response) => {
+        // connection.query(
+        //     "UPDATE role SET ? WHERE ?",
+        //     [
+        //         {
+        //             salary: response.newSalary
+        //         },
+        //         {
+        //             id: roleID.id
+        //         }
+        //     ],
+        //     (err, res) => {
+        //         if (err) throw err;
+        await db.updateInfo("role", [{salary: response.newSalary}, {id: roleID.id}]);
                 console.log(`Success! Updated the salary of ${roleID.title} in the database to $${response.newSalary}.\n`);
                 begin();
-            }
-        );
+        //     }
+        // );
     });
 };
 
@@ -393,7 +395,7 @@ const switchDepartment = async roleID => {
                 current = department.name;
             };
         });
-        console.log(`This role is currently assigned to the ${current} department.\n`);
+        console.log(`\nThis role is currently assigned to the ${current} department.\n`);
         inquirer.prompt([
             {
                 type: 'list',
@@ -401,7 +403,7 @@ const switchDepartment = async roleID => {
                 choices: dept.map(department => department.name),
                 name: 'newDepartment'
             }
-        ]).then((response) => {
+        ]).then(async (response) => {
             let newID;
             dept.forEach(department => {
                 if (department.name === response.newDepartment) {
@@ -412,22 +414,23 @@ const switchDepartment = async roleID => {
                 console.log(`${roleID.title} is already assigned to ${response.newDepartment}.\n`);
                 begin();
             } else {
-                connection.query(
-                    "UPDATE role SET ? WHERE ?",
-                    [
-                        {
-                            department_id: newID
-                        },
-                        {
-                            id: roleID.id
-                        }
-                    ],
-                    (err, res) => {
-                        if (err) throw err;
+                // connection.query(
+                //     "UPDATE role SET ? WHERE ?",
+                //     [
+                //         {
+                //             department_id: newID
+                //         },
+                //         {
+                //             id: roleID.id
+                //         }
+                //     ],
+                //     (err, res) => {
+                //         if (err) throw err;
+                await db.updateInfo("role", [{department_id: newID}, {id: roleID.id}]);
                         console.log(`Success! Reassigned ${roleID.title} to the ${response.newDepartment} department.\n`);
                         begin();
-                    }
-                );
+                //     }
+                // );
             };
         });
     //});
@@ -485,24 +488,32 @@ const employeeName = employeeID => {
             message: "What is the updated last name of the employee?",
             name: 'lastName'
         }
-    ]).then((response) => {
-        connection.query(
-            "UPDATE employee SET ? WHERE ?",
-            [
-                {
-                    first_name: response.firstName,
-                    last_name: response.lastName
-                },
-                {
-                    id: employeeID.id
-                }
-            ],
-            (err, res) => {
-                if (err) throw err;
+    ]).then(async (response) => {
+        // connection.query(
+        //     "UPDATE employee SET ? WHERE ?",
+        //     [
+        //         {
+        //             first_name: response.firstName,
+        //             last_name: response.lastName
+        //         },
+        //         {
+        //             id: employeeID.id
+        //         }
+        //     ],
+        //     (err, res) => {
+        //         if (err) throw err;
+        await db.updateInfo("employee", 
+        [{
+            first_name: response.firstName,
+            last_name: response.lastName
+        },
+        {
+            id: employeeID.id
+        }]);
                 console.log(`Success! Updated ${response.firstName} ${response.lastName}'s name in the database.\n`);
                 begin();
-            }
-        );
+        //     }
+        // );
     });
 };
 
@@ -516,7 +527,7 @@ const employeeRole = async employeeID => {
                 current = role.title;
             };
         });
-        console.log(`${employeeID.first_name} ${employeeID.last_name}'s current role is ${current}.\n`);
+        console.log(`\n${employeeID.first_name} ${employeeID.last_name}'s current role is ${current}.\n`);
         inquirer.prompt([
             {
                 type: 'list',
@@ -524,74 +535,77 @@ const employeeRole = async employeeID => {
                 choices: roles.map(role=>role.title),
                 name: 'newRole'
             }
-        ]).then((response) => {
+        ]).then(async (response) => {
             let newRoleID;
             roles.forEach(role => {
                 if (role.title === response.newRole) {
                     newRoleID = role.id;
                 };
             });
-            connection.query(
-                'UPDATE employee SET ? WHERE ?',
-                [
-                    {
-                        role_id: newRoleID
-                    },
-                    {
-                        id: employeeID.id
-                    }
-                ],
-                (err, res) => {
-                    if (err) throw err;
-                    console.log(`Success! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
+            // connection.query(
+            //     'UPDATE employee SET ? WHERE ?',
+            //     [
+            //         {
+            //             role_id: newRoleID
+            //         },
+            //         {
+            //             id: employeeID.id
+            //         }
+            //     ],
+            //     (err, res) => {
+            //         if (err) throw err;
+            await db.updateInfo("employee", [{role_id: newRoleID}, {id: employeeID.id}]);
+                    console.log(`\nSuccess! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
                     begin();
-                }
-            );
+            //     }
+            // );
         });
     //});
 };
 
-const employeeManager = employeeID => {
-    connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
+const employeeManager = async employeeID => {
+    //connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
+    const managers = await db.viewManagers();
         let current;
-        res.forEach(manager => {
+        managers.forEach(manager => {
             if (manager.id === employeeID.manager_id) {
                 current = `${manager.first_name} ${manager.last_name}`;
             };
         });
-        console.log(`${employeeID.first_name} ${employeeID.last_name}'s current manager is ${current}.\n`);
+        console.log(`\n${employeeID.first_name} ${employeeID.last_name}'s current manager is ${current}.\n`);
         inquirer.prompt([
             {
                 type: "list",
                 message: `Which manager would you like to reassign ${employeeID.first_name} ${employeeID.last_name} to?`,
-                choices: [...res.map(manager=>`${manager.first_name} ${manager.last_name}`), "This employee doesn't have a manager"],
+                choices: [...managers.map(manager=>`${manager.first_name} ${manager.last_name}`), "This employee doesn't have a manager"],
                 name: 'newManager'
             }
-        ]).then((response) => {
+        ]).then(async (response) => {
             let newManagerID;
-            res.forEach(manager => {
+            managers.forEach(manager => {
                 if (`${manager.first_name} ${manager.last_name}` === response.newManager) {
                     newManagerID = manager;
                 };
             });
-            connection.query(
-                "UPDATE employee SET ? WHERE ?",
-                [
-                    {
-                        manager_id: newManagerID.id
-                    },
-                    {
-                        id: employeeID.id
-                    }
-                ],
-                (err2, res2) => {
-                    if (err2) throw err2;
-                    console.log(`Success! Assigned ${newManagerID.first_name} ${newManagerID.last_name} as ${employeeID.first_name} ${employeeID.last_name}'s manager.\n`);
+            // connection.query(
+            //     "UPDATE employee SET ? WHERE ?",
+            //     [
+            //         {
+            //             manager_id: newManagerID.id
+            //         },
+            //         {
+            //             id: employeeID.id
+            //         }
+            //     ],
+            //     (err2, res2) => {
+            //         if (err2) throw err2;
+            await db.updateInfo("employee", [{manager_id: newManagerID.id}, {id: employeeID.id}]);
+                    console.log(`\nSuccess! Assigned ${newManagerID.first_name} ${newManagerID.last_name} as ${employeeID.first_name} ${employeeID.last_name}'s manager.\n`);
                     begin();
-                }
-            );
+            //     }
+            // );
         });
-    });
+    //});
 };
 
 const viewInfo = () => {
@@ -843,18 +857,19 @@ const deleteDepartment = async () => {
                 choices: depNames,
                 name: 'deleteChoice'
             }
-        ]).then((response) => {
-            connection.query(
-                "DELETE FROM department WHERE ?",
-                {
-                    name: response.deleteChoice
-                },
-                (err, res) => {
-                    if (err) throw err;
-                    console.log(`Success! ${response.deleteChoice} has been removed from the database.\n`);
+        ]).then(async (response) => {
+            // connection.query(
+            //     "DELETE FROM department WHERE ?",
+            //     {
+            //         name: response.deleteChoice
+            //     },
+            //     (err, res) => {
+            //         if (err) throw err;
+            await db.deleteInfo("department", {name: response.deleteChoice});
+                    console.log(`\nSuccess! ${response.deleteChoice} has been removed from the database.\n`);
                     begin();
-                }
-            );
+            //     }
+            // );
         });
     //});
 };
@@ -870,18 +885,19 @@ const deleteRole = async () => {
                 choices: roleTitles.map(role=>role.title),
                 name: "deleteChoice"
             }
-        ]).then((response) => {
-            connection.query(
-                "DELETE FROM role WHERE ?",
-                {
-                    title: response.deleteChoice
-                },
-                (err, res) => {
-                    if (err) throw err;
-                    console.log(`Success! ${response.deleteChoice} has been removed from the database.\n`);
+        ]).then(async (response) => {
+            // connection.query(
+            //     "DELETE FROM role WHERE ?",
+            //     {
+            //         title: response.deleteChoice
+            //     },
+            //     (err, res) => {
+            //         if (err) throw err;
+            await db.deleteInfo("role", {title: response.deleteChoice});
+                    console.log(`\nSuccess! ${response.deleteChoice} has been removed from the database.\n`);
                     begin();
-                }
-            );
+            //     }
+            // );
         });
     //});
 };
@@ -897,24 +913,25 @@ const deleteEmployee = async () => {
                 choices: empNames.map(employee=>`${employee.first_name} ${employee.last_name}`),
                 name: 'deleteChoice'
             }
-        ]).then((response) => {
+        ]).then(async (response) => {
             let name = response.deleteChoice.split(" ");
-            connection.query(
-                "DELETE FROM employee WHERE ? and ?",
-                [
-                    {
-                        first_name: name[0]
-                    },
-                    {
-                        last_name: name[1]
-                    }
-                ],
-                (err, res) => {
-                    if (err) throw err;
-                    console.log(`Success! ${response.deleteChoice} has been deleted from the database.\n`);
+            // connection.query(
+            //     "DELETE FROM employee WHERE ? and ?",
+            //     [
+            //         {
+            //             first_name: name[0]
+            //         },
+            //         {
+            //             last_name: name[1]
+            //         }
+            //     ],
+            //     (err, res) => {
+            //         if (err) throw err;
+            await db.deleteInfo("employee", [{first_name: name[0]}, {last_name: name[1]}]);
+                    console.log(`\nSuccess! ${response.deleteChoice} has been deleted from the database.\n`);
                     begin();
-                }
-            );
+            //     }
+            // );
         });
     //});
 };

@@ -33,5 +33,8 @@ class DB {
     updateInfo(table, params) {
         return this.connection.query(`UPDATE ${table} SET ? WHERE ?`, params);
     };
+    deleteInfo(table, info) {
+        return this.connection.query(`DELETE FROM ${table} WHERE ?`, info);
+    };
 };
 module.exports = new DB(connection);
