@@ -1,7 +1,7 @@
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const cTable = require("console.table");
-const DB = require("./db");
+const db = require("./db");
 
 const connection = mysql.createConnection({
     host: "localhost",
@@ -16,10 +16,7 @@ connection.connect((err) => {
     begin();
 });
 
-const data = new DB(connection);
-console.log(data.departmentInfo());
-
-const begin = () => {
+const begin = async () => {
     inquirer.prompt([
         {
             type: 'list',
@@ -75,34 +72,34 @@ const addInfo = () => {
     });
 };
 
-const addDepartment = async () => {
-    let departments = await data.departmentInfo();
-    console.log(departments);
+const addDepartment = () => {
     inquirer.prompt([
         {
             type: 'input',
             message: "What is the name of the new department?",
             name: 'department'
         }
-    ]).then ((response) => {
-        connection.query(
-            "INSERT INTO department SET ?",
-            {
-                name: response.department
-            },
-            (err, res) => {
-                if (err) throw err;
+    ]).then (async (response) => {
+        // connection.query(
+        //     "INSERT INTO department SET ?",
+        //     {
+        //         name: response.department
+        //     },
+        //     (err, res) => {
+        //         if (err) throw err;
+        await db.addInfo("department", {name: response.department});
                 console.log(`Success! Added ${response.department} to the database.\n`);
                 begin();
-            }
-        );
+            //}
+        //);
     });
 };
 
-const addRole = () => {
-    connection.query("SELECT * FROM department", (err, res) => {
-        if (err) throw err;
-        if (res.length < 1) {
+const addRole = async () => {
+    // connection.query("SELECT * FROM department", (err, res) => {
+    //     if (err) throw err;
+    let dept = await db.tableInfo("department");
+        if (dept.length < 1) {
             console.log("No departments on file, please first create a department and then you can add a role.\n");
             return begin();
         };
@@ -120,7 +117,7 @@ const addRole = () => {
             {
                 type: "list",
                 message: "What department does this role belong in?",
-                choices: res.map(x => x.name),
+                choices: dept.map(x => x.name),
                 name: 'department'
             }
         ]).then((response) => {
@@ -132,24 +129,25 @@ const addRole = () => {
                     salary: response.salary,
                     department_id: department[0].id
                 },
-                (err2, res2) => {
-                    if (err2) throw err2;
+                (err, res) => {
+                    if (err) throw err;
                     console.log(`Success! Added ${response.role} to the database.\n`);
                     begin();
                 }
             );
         });
-    });
+    //});
 };
 
-const addEmployee = () => {
-    connection.query("SELECT * FROM role", (err, res) => {
-        if (err) throw err;
-        if (res.length < 1) {
+const addEmployee = async () => {
+    // connection.query("SELECT * FROM role", (err, res) => {
+    //     if (err) throw err;
+    let roles = await db.tableInfo("role");
+        if (roles.length < 1) {
             console.log("No roles on file, please first create a role and then you can add an employee.\n");
             return begin();
         };
-        connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err2, res2) => {
+        connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
             inquirer.prompt([
                 {
                     type: 'input',
@@ -164,25 +162,25 @@ const addEmployee = () => {
                 {
                     type: 'list',
                     message: "What is the employee's role?",
-                    choices: res.map(role=>role.title),
+                    choices: roles.map(role=>role.title),
                     name: 'role'
                 },
                 {
                     type: 'list',
                     message: "Who is the employee's manager?",
-                    choices: [...res2.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
+                    choices: [...res.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
                     name: 'manager'
                 }
             ]).then((response) => {
                 let roleID; 
                 let managerID;
-                res.forEach(role => {
+                roles.forEach(role => {
                     if (role.title === response.role) {
                         roleID = role.id;
                     };
                 });
                 if (response.manager !== "This employee doesn't have a manager") {
-                    res2.forEach(employee => {
+                    res.forEach(employee => {
                         if (`${employee.first_name} ${employee.last_name}` === response.manager) {
                             managerID = employee.id;
                         };
@@ -196,15 +194,15 @@ const addEmployee = () => {
                         role_id: roleID,
                         manager_id: managerID
                     },
-                    (err3, res3) => {
-                        if (err3) throw err3;
+                    (err2, res2) => {
+                        if (err2) throw err2;
                         console.log(`Success! Added ${response.firstName} ${response.lastName} to the database.\n`);
                         begin();
                     }
                 );
             });
         });
-    });
+    //});
 };
 
 const updateInfo = () => {
@@ -233,13 +231,14 @@ const updateInfo = () => {
 };
 
 const renameDepartment = async () => {
-    connection.query('SELECT * FROM department', (err, res) => {
-        if (err) throw err;
+    // connection.query('SELECT * FROM department', (err, res) => {
+    //     if (err) throw err;
+    const dept = await db.tableInfo("department");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which department would you like to rename?",
-                choices: res.map(department => department.name),
+                choices: dept.map(department => department.name),
                 name: 'department'
             },
             {
@@ -249,7 +248,7 @@ const renameDepartment = async () => {
             }
         ]).then((response) => {
             let departmentID;
-            res.forEach(department => {
+            dept.forEach(department => {
                 if (department.name === response.department) {
                     departmentID = department.id;
                 };
@@ -264,24 +263,25 @@ const renameDepartment = async () => {
                         id: departmentID
                     }
                 ],
-                (err2, res2) => {
-                    if (err2) throw err2;
+                (err, res) => {
+                    if (err) throw err;
                     console.log(`Success! Renamed ${response.department} to ${response.newName} in the database.\n`);
                     begin();
                 }
             );
         });
-    });
+    //});
 };
 
-const updateRole = () => {
-    connection.query("SELECT * FROM role", (err, res) => {
-        if (err) throw err;
+const updateRole = async () => {
+    // connection.query("SELECT * FROM role", (err, res) => {
+    //     if (err) throw err;
+    const roles = await db.tableInfo("role");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "What role would you like to update?",
-                choices: res.map(role=>role.title),
+                choices: roles.map(role=>role.title),
                 name: 'toUpdate'
             },
             {
@@ -292,7 +292,7 @@ const updateRole = () => {
             }
         ]).then((response) => {
             let roleID = {};
-            res.forEach(role => {
+            roles.forEach(role => {
                 if (role.title === response.toUpdate) {
                     roleID = role;
                 };
@@ -311,7 +311,7 @@ const updateRole = () => {
                     begin();
             };
         });
-    });
+    //});
 };
 
 const renameRole = roleID => {
@@ -369,10 +369,11 @@ const updateSalary = roleID => {
     });
 };
 
-const switchDepartment = roleID => {
-    connection.query("SELECT * FROM department", (err, res) => {
+const switchDepartment = async roleID => {
+    // connection.query("SELECT * FROM department", (err, res) => {
+    const dept = await db.tableInfo("department");
         let current;
-        res.forEach(department => {
+        dept.forEach(department => {
             if (department.id === roleID.department_id) {
                 current = department.name;
             };
@@ -382,12 +383,12 @@ const switchDepartment = roleID => {
             {
                 type: 'list',
                 message: "What department would you like to reassign this role to?",
-                choices: res.map(department => department.name),
+                choices: dept.map(department => department.name),
                 name: 'newDepartment'
             }
         ]).then((response) => {
             let newID;
-            res.forEach(department => {
+            dept.forEach(department => {
                 if (department.name === response.newDepartment) {
                     newID = department.id;
                 };
@@ -406,24 +407,25 @@ const switchDepartment = roleID => {
                             id: roleID.id
                         }
                     ],
-                    (err2, res2) => {
-                        if (err2) throw err2;
+                    (err, res) => {
+                        if (err) throw err;
                         console.log(`Success! Reassigned ${roleID.title} to the ${response.newDepartment} department.\n`);
                         begin();
                     }
                 );
             };
         });
-    });
+    //});
 };
 
-const updateEmployee = () => {
-    connection.query("SELECT * FROM employee", (err, res) => {
+const updateEmployee = async () => {
+    // connection.query("SELECT * FROM employee", (err, res) => {
+    const emp = await db.tableInfo("employee");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which employee's information would you like to update?",
-                choices: res.map(employee=>`${employee.first_name} ${employee.last_name}`),
+                choices: emp.map(employee=>`${employee.first_name} ${employee.last_name}`),
                 name: 'toUpdate'
             },
             {
@@ -434,7 +436,7 @@ const updateEmployee = () => {
             }
         ]).then((response) => {
             let employeeID = {};
-            res.forEach(employee => {
+            emp.forEach(employee => {
                 if (`${employee.first_name} ${employee.last_name}` === response.toUpdate) {
                     employeeID = employee;
                 };
@@ -453,7 +455,7 @@ const updateEmployee = () => {
                     begin();
             };
         });
-    });
+    //});
 };
 
 const employeeName = employeeID => {
@@ -489,11 +491,12 @@ const employeeName = employeeID => {
     });
 };
 
-const employeeRole = employeeID => {
-    connection.query("SELECT * FROM role", (err, res) => {
-        if (err) throw err;
+const employeeRole = async employeeID => {
+    // connection.query("SELECT * FROM role", (err, res) => {
+    //     if (err) throw err;
+    const roles = await db.tableInfo('role');
         let current;
-        res.forEach(role => {
+        roles.forEach(role => {
             if (role.id === employeeID.role_id) {
                 current = role.title;
             };
@@ -503,12 +506,12 @@ const employeeRole = employeeID => {
             {
                 type: 'list',
                 message: `What role would you like to reassign ${employeeID.first_name} ${employeeID.last_name} to?`,
-                choices: res.map(role=>role.title),
+                choices: roles.map(role=>role.title),
                 name: 'newRole'
             }
         ]).then((response) => {
             let newRoleID;
-            res.forEach(role => {
+            roles.forEach(role => {
                 if (role.title === response.newRole) {
                     newRoleID = role.id;
                 };
@@ -523,14 +526,14 @@ const employeeRole = employeeID => {
                         id: employeeID.id
                     }
                 ],
-                (err2, res2) => {
-                    if (err2) throw err2;
+                (err, res) => {
+                    if (err) throw err;
                     console.log(`Success! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
                     begin();
                 }
             );
         });
-    });
+    //});
 };
 
 const employeeManager = employeeID => {
@@ -581,13 +584,16 @@ const viewInfo = () => {
         {
             type: 'list',
             message: "What information would you like to see?",
-            choices: ["Departments", "Roles", "Employees"],
+            choices: ["Departments", "Department Budgets", "Roles", "Employees"],
             name: 'toView'
         }
     ]).then((response) => {
         switch (response.toView) {
             case "Departments":
                 viewDepartments();
+                break;
+            case "Department Budgets":
+                budgets();
                 break;
             case "Roles":
                 viewRoles();
@@ -601,11 +607,12 @@ const viewInfo = () => {
     });
 };
 
-const viewDepartments = () => {
-    connection.query("SELECT name FROM department", (err, res) => {
-        console.table(res);
+const viewDepartments = async () => {
+    // connection.query("SELECT name FROM department", (err, res) => {
+    const depNames = await db.customInfo("name", "department");
+        console.table(depNames);
         begin();
-    });
+    //});
 };
 
 const viewRoles = () => {
@@ -616,46 +623,49 @@ const viewRoles = () => {
             choices: ["All roles", "Specific department roles"],
             name: 'choice'
         }
-    ]).then((response) => {
+    ]).then(async (response) => {
         if (response.choice === "Specific department roles") {
             departmentRoles();
         } else {
-            connection.query("SELECT title, salary FROM role", (err, res) => {
-                if (err) throw err;
-                console.table(res);
+            // connection.query("SELECT title, salary FROM role", (err, res) => {
+                // if (err) throw err;
+            const roleInfo = await db.customInfo("title, salary", "role");
+                console.table(roleInfo);
                 begin();
-            });
+            //});
         };
     });
 };
 
-const departmentRoles = () => {
-    connection.query("SELECT name FROM department", (err, res) => {
-        if (err) throw err;
+const departmentRoles = async () => {
+    // connection.query("SELECT name FROM department", (err, res) => {
+    //     if (err) throw err;
+    const depNames = await db.customInfo("name", "department");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which department's roles would you like to see?",
-                choices: res,
+                choices: depNames,
                 name: 'departmentChoice'
             }
         ]).then((response) => {
             connection.query(
                 `SELECT role.title, role.salary FROM role LEFT JOIN department ON department.id = role.department_id WHERE department.name = ?`,
                 response.departmentChoice,
-                (err2, res2) => {
-                    if (err2) throw err2;
-                    console.table(res2);
+                (err, res) => {
+                    if (err) throw err;
+                    console.table(res);
                     begin();                
                 }
             );
         });
-    });
+    //});
 };
 
-const employeeTable = (employeeArr) => {
-    connection.query("SELECT * FROM employee", (err, res) => {
-        if (err) throw err;
+const employeeTable = async employeeArr => {
+    // connection.query("SELECT * FROM employee", (err, res) => {
+    //     if (err) throw err;
+    const emps = await db.tableInfo("employee");
         let employeeTable = [];
         employeeArr.forEach(employee => {
             let empObj = {};
@@ -665,7 +675,7 @@ const employeeTable = (employeeArr) => {
             empObj.Department = employee.name;
             empObj.Salary = employee.salary;
             empObj.Manager = "This employee has no manager";
-            res.forEach(emp => {
+            emps.forEach(emp => {
                 if (employee.manager_id === emp.id) {
                     empObj.Manager = `${emp.first_name} ${emp.last_name}`;
                 };
@@ -674,7 +684,7 @@ const employeeTable = (employeeArr) => {
         });
         console.table(employeeTable);
         begin();
-    });
+    //});
 };
 
 const viewEmployees = () => {
@@ -705,65 +715,67 @@ const viewEmployees = () => {
     });
 };
 
-const employeeByDepartment = () => {
-    connection.query("SELECT name FROM department", (err, res) => {
-        if (err) throw err;
+const employeeByDepartment = async () => {
+    // connection.query("SELECT name FROM department", (err, res) => {
+    //     if (err) throw err;
+    const depNames = await db.customInfo("name", "department");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which department's employees would you like to see?",
-                choices: res,
+                choices: depNames,
                 name: 'departmentChoice'
             }
         ]).then((response) => {
             connection.query(
                 "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE department.name = ?",
                 response.departmentChoice,
-                (err2, res2) => {
-                    if (err2) throw err2;
-                    employeeTable(res2);
+                (err, res) => {
+                    if (err) throw err;
+                    employeeTable(res);
                 });
         });
-    });
+    //});
 };
 
-const employeeByRole = () => {
-    connection.query("SELECT title FROM role", (err, res) => {
-        console.log(res);
-        if (err) throw err;
+const employeeByRole = async () => {
+    // connection.query("SELECT title FROM role", (err, res) => {
+    //     if (err) throw err;
+    const roleTitles = await db.customInfo("title", "role");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "View all employees from which role?",
-                choices: res.map(role=>role.title),
+                choices: roleTitles.map(role=>role.title),
                 name: 'roleChoice'
             }
         ]).then((response) => {
             connection.query(
                 "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE role.title = ?",
                 response.roleChoice,
-                (err2, res2) => {
-                    if (err2) throw err2;
-                    employeeTable(res2);
+                (err, res) => {
+                    if (err) throw err;
+                    employeeTable(res);
                 }
             );
         });
-    });
+    //});
 };
 
-const employeeByManager = () => {
-    connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
-        if (err) throw err;
+const employeeByManager = async () => {
+    // connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'", (err, res) => {
+    //     if (err) throw err;
+    const managers = await db.viewManagers();
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which manager's employees would you like to see?",
-                choices: res.map(manager => `${manager.first_name} ${manager.last_name}`),
+                choices: managers.map(manager => `${manager.first_name} ${manager.last_name}`),
                 name: 'managerChoice'
             }
         ]).then((response) => {
             let managerID;
-            res.forEach(manager => {
+            managers.forEach(manager => {
                 if (`${manager.first_name} ${manager.last_name}` === response.managerChoice) {
                     managerID = manager.id;
                 };
@@ -771,13 +783,13 @@ const employeeByManager = () => {
             connection.query(
                 "SELECT employee.id, employee.first_name, employee.last_name, role.title, role.salary, department.name, employee.manager_id FROM employee INNER JOIN role ON employee.role_id = role.id INNER JOIN department ON role.department_id = department.id WHERE employee.manager_id = ?",
                 managerID,
-                (err2, res2) => {
-                    if (err2) throw err2;
-                    employeeTable(res2);
+                (err, res) => {
+                    if (err) throw err;
+                    employeeTable(res);
                 }
             );
         });
-    });
+    //});
 };
 
 const deleteInfo = () => {
@@ -805,14 +817,15 @@ const deleteInfo = () => {
     });
 };
 
-const deleteDepartment = () => {
-    connection.query("SELECT name FROM department", (err, res) => {
-        if (err) throw err;
+const deleteDepartment = async () => {
+    // connection.query("SELECT name FROM department", (err, res) => {
+    //     if (err) throw err;
+    const depNames = await db.customInfo("name", "department");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which department would you like to delete?",
-                choices: res,
+                choices: depNames,
                 name: 'deleteChoice'
             }
         ]).then((response) => {
@@ -821,24 +834,25 @@ const deleteDepartment = () => {
                 {
                     name: response.deleteChoice
                 },
-                (err2, res2) => {
-                    if (err2) throw err2;
+                (err, res) => {
+                    if (err) throw err;
                     console.log(`Success! ${response.deleteChoice} has been removed from the database.\n`);
                     begin();
                 }
             );
         });
-    });
+    //});
 };
 
-const deleteRole = () => {
-    connection.query("SELECT title FROM role", (err, res) => {
-        if (err) throw err;
+const deleteRole = async () => {
+    // connection.query("SELECT title FROM role", (err, res) => {
+    //     if (err) throw err;
+    const roleTitles = await db.customInfo("title", "role");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "What role would you like to delete?",
-                choices: res.map(role=>role.title),
+                choices: roleTitles.map(role=>role.title),
                 name: "deleteChoice"
             }
         ]).then((response) => {
@@ -847,24 +861,25 @@ const deleteRole = () => {
                 {
                     title: response.deleteChoice
                 },
-                (err2, res2) => {
-                    if (err2) throw err2;
+                (err, res) => {
+                    if (err) throw err;
                     console.log(`Success! ${response.deleteChoice} has been removed from the database.\n`);
                     begin();
                 }
             );
         });
-    });
+    //});
 };
 
-const deleteEmployee = () => {
-    connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
-        if (err) throw err;
+const deleteEmployee = async () => {
+    // connection.query("SELECT first_name, last_name FROM employee", (err, res) => {
+    //     if (err) throw err;
+    const empNames = await db.customInfo("first_name, last_name", "employee");
         inquirer.prompt([
             {
                 type: 'list',
                 message: "Which employee would you like to delete?",
-                choices: res.map(employee=>`${employee.first_name} ${employee.last_name}`),
+                choices: empNames.map(employee=>`${employee.first_name} ${employee.last_name}`),
                 name: 'deleteChoice'
             }
         ]).then((response) => {
@@ -879,12 +894,12 @@ const deleteEmployee = () => {
                         last_name: name[1]
                     }
                 ],
-                (err2, res2) => {
-                    if (err2) throw err2;
+                (err, res) => {
+                    if (err) throw err;
                     console.log(`Success! ${response.deleteChoice} has been deleted from the database.\n`);
                     begin();
                 }
             );
         });
-    });
+    //});
 };

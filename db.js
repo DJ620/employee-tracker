@@ -1,40 +1,34 @@
 const mysql = require("mysql");
+const util = require("util");
 
+const connection = mysql.createConnection({
+    host: "localhost",
+    port: 3306,
+    user: "root",
+    password: "Hersh6624!",
+    database: "employeeDB"
+});
+connection.connect((err) => {
+    if (err) throw err;
+});
+connection.query = util.promisify(connection.query);
 class DB {
-    constructor(connection) {
-        this.connection = connection;
-    }
-    test() {
-        return "Test";
-    }
-    departmentInfo() {
+  // Keeping a reference to the connection on the class in case we need it later
+  constructor(connection) {
+    this.connection = connection;
+  };
+    tableInfo(table) {
+        return this.connection.query(`SELECT * FROM ${table}`);
+    };
+    customInfo(column, table) {
+        return this.connection.query(`SELECT ${column} FROM ${table}`);
+    };
+    viewManagers() {
+        return this.connection.query("SELECT employee.id, employee.first_name, employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'");
+    };
+    addInfo(table, info) {
         return this.connection.query(
-            "SELECT * FROM department",
-            (err, res) => {
-                if (err) throw err;
-            }
-        );
-    };
-
-    roleInfo() {
-        connection.query(
-            "SELECT * FROM role",
-            (err, res) => {
-                if (err) throw err;
-                return res;
-            }
-        );
-    };
-
-    employeeInfo() {
-        connection.query(
-            "SELECT * FROM employee",
-            (err, res) => {
-                if (err) throw err;
-                return res;
-            }
-        );
+            `INSERT INTO ${table} SET ?`, info);
     };
 };
-
-module.exports = DB;
+module.exports = new DB(connection);
