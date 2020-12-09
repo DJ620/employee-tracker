@@ -61,7 +61,7 @@ class DB {
     concatName(array) {
         return `${array.first_name} ${array.last_name}`;
     };
-
+    // This function formats employee information into a well organized table
     async employeeTable(employeeArr)  {
         const emps = await this.tableInfo("employee");
         let table = [];
