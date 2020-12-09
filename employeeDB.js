@@ -469,7 +469,7 @@ const employeeManager = async employeeID => {
             name: 'newManager'
         }
     ]).then(async (response) => {
-        let newManagerID = filter(manager=>`${db.concatName(manager)} - ${manager.title}` === response.newManager)[0];
+        let newManagerID = managers.filter(manager=>`${db.concatName(manager)} - ${manager.title}` === response.newManager)[0];
         if (db.concatName(newManagerID) === current) {
             console.log(`\n${current} is already assigned as ${db.concatName(employeeID)}'s manager.\n`);
             return begin();
@@ -538,6 +538,7 @@ const employeeTable = async employeeArr => {
         });
         table.push(empObj);
     });
+    console.log("");
     console.table(table);
     begin();
 };
@@ -751,5 +752,36 @@ const deleteEmployee = async () => {
         await db.deleteInfo("employee", [{first_name: name[0]}, {last_name: name[1]}]);
         console.log(`\nSuccess! ${response.deleteChoice} has been deleted from the database.\n`);
         begin();
+    });
+};
+
+// This is a function that allows a user to search for an employee by their name
+const employeeSearch = () => {
+    inquirer.prompt([
+        {
+            type: 'input',
+            message: "What is the employee's first name?",
+            name: "first_name"
+        },
+        {
+            type: 'input',
+            message: "What is the employee's last name?",
+            name: "last_name"
+        }
+    ]).then(async (response) => {
+        const emps = await db.innerJoin();
+        // Searches for a matching name in the database
+        let match;
+        emps.forEach(emp=>{
+            if (db.concatName(emp) === db.concatName(response)) {
+                match = emp;
+            };
+        });
+        if (match) {
+            employeeTable([match]);
+        } else {
+            console.log(`\nNo employee found\n`);
+            begin();
+        };
     });
 };
