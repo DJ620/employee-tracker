@@ -88,18 +88,33 @@ const addDepartment = () => {
             message: "What is the name of the new department?",
             name: 'department'
         }
-        // Async callback function to await the db.addInfo method which adds data to the table passed in
+        // Async callback function to await the db.tableInfo and db.addInfo methods
     ]).then (async (response) => {
+        // the db.tableInfo method returns data from the table passed in
+        let deps = await db.tableInfo("department");
+        // Code to check if department is already in the database
+        let exists = false;
+        deps.forEach(dep=>{
+            if (dep.name === response.department) {
+                exists = true;
+            };
+        });
+        if (exists) {
+            console.log(`\n${response.department} department is already on file.\n`);
+            return begin();
+        };
+        // the db.addInfo method adds data to the table passed in
         await db.addInfo("department", {name: response.department});
         console.log(`\nSuccess! Added ${response.department} to the database.\n`);
+        // Redirects user back to the start menu
         begin();
     });
 };
 
 const addRole = async () => {
-    // The db.tableInfo method calls all data from the table passed in
-    let dept = await db.tableInfo("department");
-    if (dept.length < 1) {
+    // First checks if there are departments on file, and if not, alerts them to first create a department
+    let deps = await db.tableInfo("department");
+    if (deps.length < 1) {
         console.log("\nNo departments on file, please first create a department and then you can add a role.\n");
         return begin();
     };
@@ -117,12 +132,23 @@ const addRole = async () => {
         {
             type: "list",
             message: "What department does this role belong in?",
-            choices: dept.map(x => x.name),
+            choices: deps.map(dep=>dep.name),
             name: 'department'
         }
     ]).then(async (response) => {
+        let roles = await db.tableInfo("role");
+        let exists = false;
+        roles.forEach(role=>{
+            if (role.title === response.role) {
+                exists = true;
+            };
+        });
+        if (exists) {
+            console.log(`\n${response.role} is already on file.\n`);
+            return begin();
+        };
         // Selecting the department the user has chosen and passing it into the db.addInfo method
-        let department = dept.filter(x=>x.name === response.department)[0];
+        let department = deps.filter(dep=>dep.name === response.department)[0];
         await db.addInfo("role",
                 {
                     title: response.role,
@@ -166,6 +192,17 @@ const addEmployee = async () => {
             name: 'manager'
         }
     ]).then(async (response) => {
+        let emps = await db.tableInfo("employee");
+        let exists = false;
+        emps.forEach(emp=>{
+            if (`${emp.first_name} ${emp.last_name}` === `${response.firstName} ${response.lastName}`) {
+                exists = true;
+            };
+        });
+        if (exists) {
+            console.log(`\n${response.firstName} ${response.lastName} is already on file.\n`);
+            return begin();
+        };
         let roleID; 
         let managerID;
         // Selecting the user's chosen role id from all roles in the database
@@ -176,9 +213,9 @@ const addEmployee = async () => {
         });
         // If the employee does have a manager, this sets managerID to that manager's id
         if (response.manager !== "This employee doesn't have a manager") {
-            managers.forEach(employee => {
-                if (`${employee.first_name} ${employee.last_name}` === response.manager) {
-                    managerID = employee.id;
+            managers.forEach(manager => {
+                if (`${manager.first_name} ${manager.last_name}` === response.manager) {
+                    managerID = manager.id;
                 };
             });
         };
@@ -222,12 +259,12 @@ const updateInfo = () => {
 };
 
 const renameDepartment = async () => {
-    const dept = await db.tableInfo("department");
+    const deps = await db.tableInfo("department");
     inquirer.prompt([
         {
             type: 'list',
             message: "Which department would you like to rename?",
-            choices: dept.map(department => department.name),
+            choices: deps.map(dep => dep.name),
             name: 'department'
         },
         {
@@ -319,12 +356,12 @@ const updateSalary = roleID => {
 };
 
 const switchDepartment = async roleID => {
-    const dept = await db.tableInfo("department");
+    const deps = await db.tableInfo("department");
     // Selects the department the role is currently assigned to
     let current;
-    dept.forEach(department => {
-        if (department.id === roleID.department_id) {
-            current = department.name;
+    deps.forEach(dep => {
+        if (dep.id === roleID.department_id) {
+            current = dep.name;
         };
     });
     console.log(`\nThis role is currently assigned to the ${current} department.\n`);
@@ -332,14 +369,14 @@ const switchDepartment = async roleID => {
         {
             type: 'list',
             message: "What department would you like to reassign this role to?",
-            choices: dept.map(department => department.name),
+            choices: deps.map(dep => dep.name),
             name: 'newDepartment'
         }
     ]).then(async (response) => {
         let newID;
-        dept.forEach(department => {
-            if (department.name === response.newDepartment) {
-                newID = department.id;
+        deps.forEach(dep => {
+            if (dep.name === response.newDepartment) {
+                newID = dep.id;
             };
         });
         if (newID === roleID.id) {
@@ -354,12 +391,12 @@ const switchDepartment = async roleID => {
 };
 
 const updateEmployee = async () => {
-    const emp = await db.tableInfo("employee");
+    const emps = await db.tableInfo("employee");
     inquirer.prompt([
         {
             type: 'list',
             message: "Which employee's information would you like to update?",
-            choices: emp.map(employee=>`${employee.first_name} ${employee.last_name}`),
+            choices: emps.map(emp=>`${emp.first_name} ${emp.last_name}`),
             name: 'toUpdate'
         },
         {
@@ -371,9 +408,9 @@ const updateEmployee = async () => {
     ]).then((response) => {
         // Selects the employee the user has chosen and passes it into the appropriate function
         let employeeID;
-        emp.forEach(employee => {
-            if (`${employee.first_name} ${employee.last_name}` === response.toUpdate) {
-                employeeID = employee;
+        emps.forEach(emp => {
+            if (`${emp.first_name} ${emp.last_name}` === response.toUpdate) {
+                employeeID = emp;
             };
         });
         switch(response.action) {
