@@ -26,20 +26,14 @@ class DB {
     tableInfo(table) {
         return this.connection.query(`SELECT * FROM ${table}`);
     };
-    // Allows for a query of specific data from any table passed in
-    customInfo(column, table) {
-        return this.connection.query(`SELECT ${column} FROM ${table}`);
-    };
     // Returns all employee's who's role title includes the word "Manager"
     viewManagers() {
         return this.connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'");
     };
-
     // Returns all roles for any department that gets passed in
     rolesByDepartment(department) {
-        return this.connection.query("SELECT role.title, role.salary FROM role LEFT JOIN department ON department.id = role.department_id WHERE department.name = ?", department);
+        return this.connection.query("SELECT role.title FROM role LEFT JOIN department ON department.id = role.department_id WHERE department.name = ?", department);
     };
-
     // Returns all employee information from the three tables
     // The two parameters are optional and have a default value of 'null' in case they are not needed
     innerJoin(param = null, info = null) {
@@ -63,7 +57,7 @@ class DB {
     deleteInfo(table, info) {
         return this.connection.query(`DELETE FROM ${table} WHERE ?`, info);
     };
-
+    // Returns the first and last name as a single string
     concatName(array) {
         return `${array.first_name} ${array.last_name}`;
     };

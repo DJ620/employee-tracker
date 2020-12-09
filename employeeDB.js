@@ -28,7 +28,7 @@ const begin = () => {
         {
             type: 'list',
             message: "How may I assist you?",
-            choices: ["Add information", "Update information", "View information", "Delete information", "I'm all done"],
+            choices: ["Add information", "Update information", "View information", "Delete information", "Search for employee", "I'm all done"],
             name: "choice"
         }
     ]).then((response) => {
@@ -47,6 +47,9 @@ const begin = () => {
                 break;
             case "I'm all done":
                 process.exit();
+                break;
+            case "Search for employee":
+                employeeSearch();
                 break;
             default:
                 begin();
@@ -210,17 +213,16 @@ const addEmployee = async () => {
         let managerID; 
         // If the employee does have a manager, this sets managerID to that manager's id
         if (response.manager !== "This employee doesn't have a manager") {
-            managerID = managers.filter(manager=>`${db.concatName(manager)}` === response.manager);
-            console.log(managerID);
+           managerID = managers.filter(manager=>`${db.concatName(manager)} - ${manager.title}` === response.manager)[0].id;
         };
         await db.addInfo("employee",
         {
-            first_name: response.firstName,
-            last_name: response.lastName,
+            first_name: response.first_name,
+            last_name: response.last_name,
             role_id: roleID,
             manager_id: managerID
         });
-        console.log(`\nSuccess! Added ${response.firstName} ${response.lastName} to the database.\n`);
+        console.log(`\nSuccess! Added ${db.concatName(response)} to the database.\n`);
         begin();
     });
 };
@@ -268,12 +270,7 @@ const renameDepartment = async () => {
         }
     ]).then(async (response) => {
         // Selects the user's chosen department id from all departments
-        let departmentID;
-        dept.forEach(department => {
-            if (department.name === response.department) {
-                departmentID = department.id;
-            };
-        });
+        let departmentID = deps.filter(dep=>dep.name === response.department)[0].id;
         // The db.updateInfo method updates any table passed into it in the database
         await db.updateInfo("department", [{name: response.newName}, {id: departmentID}]);
         console.log(`\nSuccess! Renamed ${response.department} to ${response.newName} in the database.\n`);
@@ -298,12 +295,7 @@ const updateRole = async () => {
         }
     ]).then((response) => {
         // Sets roleID to the role the user has chosen and passes it into the appropriate function
-        let roleID;
-        roles.forEach(role => {
-            if (role.title === response.toUpdate) {
-                roleID = role;
-            };
-        });
+        let roleID = roles.filter(role=>role.title === response.toUpdate)[0];
         switch (response.action) {
             case "Rename role":
                 renameRole(roleID);
@@ -352,12 +344,7 @@ const updateSalary = roleID => {
 const switchDepartment = async roleID => {
     const deps = await db.tableInfo("department");
     // Selects the department the role is currently assigned to
-    let current;
-    deps.forEach(dep => {
-        if (dep.id === roleID.department_id) {
-            current = dep.name;
-        };
-    });
+    let current = deps.filter(dep=>dep.id === roleID.department_id)[0].name;
     console.log(`\nThis role is currently assigned to the ${current} department.\n`);
     inquirer.prompt([
         {
@@ -367,12 +354,7 @@ const switchDepartment = async roleID => {
             name: 'newDepartment'
         }
     ]).then(async (response) => {
-        let newID;
-        deps.forEach(dep => {
-            if (dep.name === response.newDepartment) {
-                newID = dep.id;
-            };
-        });
+        let newID = deps.filter(dep=>dep.name === response.newDepartment)[0].id;
         if (newID === roleID.id) {
             console.log(`\n${roleID.title} is already assigned to ${response.newDepartment}.\n`);
             begin();
@@ -390,7 +372,7 @@ const updateEmployee = async () => {
         {
             type: 'list',
             message: "Which employee's information would you like to update?",
-            choices: emps.map(emp=>`${emp.first_name} ${emp.last_name}`),
+            choices: emps.map(emp=>db.concatName(emp)),
             name: 'toUpdate'
         },
         {
@@ -401,12 +383,7 @@ const updateEmployee = async () => {
         }
     ]).then((response) => {
         // Selects the employee the user has chosen and passes it into the appropriate function
-        let employeeID;
-        emps.forEach(emp => {
-            if (`${emp.first_name} ${emp.last_name}` === response.toUpdate) {
-                employeeID = emp;
-            };
-        });
+        let employeeID = emps.filter(emp=>db.concatName(emp) === response.toUpdate)[0];
         switch(response.action) {
             case "Update the employee's name":
                 employeeName(employeeID);
@@ -428,23 +405,23 @@ const employeeName = employeeID => {
         {
             type: 'input',
             message: "What is the updated first name of the employee?",
-            name: 'firstName'
+            name: 'first_name'
         },
         {
             type: 'input',
             message: "What is the updated last name of the employee?",
-            name: 'lastName'
+            name: 'last_name'
         }
     ]).then(async (response) => {
         await db.updateInfo("employee", 
         [{
-            first_name: response.firstName,
-            last_name: response.lastName
+            first_name: response.first_name,
+            last_name: response.last_name
         },
         {
             id: employeeID.id
         }]);
-        console.log(`\nSuccess! Updated ${response.firstName} ${response.lastName}'s name in the database.\n`);
+        console.log(`\nSuccess! Updated ${db.concatName(response)}'s name in the database.\n`);
         begin();
     });
 };
@@ -452,68 +429,53 @@ const employeeName = employeeID => {
 const employeeRole = async employeeID => {
     const roles = await db.tableInfo('role');
     // Selects the employee's current role
-    let current;
-    roles.forEach(role => {
-        if (role.id === employeeID.role_id) {
-            current = role;
-        };
-    });
-    console.log(`\n${employeeID.first_name} ${employeeID.last_name}'s current role is ${current.title}.\n`);
+    let current = roles.filter(role=>role.id === employeeID.role_id)[0];
+    console.log(`\n${db.concatName(employeeID)}'s current role is ${current.title}.\n`);
     inquirer.prompt([
         {
             type: 'list',
-            message: `What role would you like to reassign ${employeeID.first_name} ${employeeID.last_name} to?`,
+            message: `What role would you like to reassign ${db.concatName(employeeID)} to?`,
             choices: roles.map(role=>role.title),
             name: 'newRole'
         }
     ]).then(async (response) => {
         //Selects the employee's new role's ID
-        let newRoleID;
-        roles.forEach(role => {
-            if (role.title === response.newRole) {
-                newRoleID = role.id;
-            };
-        });
+        let newRoleID = roles.filter(role=>role.title === response.newRole)[0].id;
         if (newRoleID === current.id) {
-            console.log(`\n${employeeID.first_name} ${employeeID.last_name} is already assigned to the role of ${response.newRole}.\n`);
+            console.log(`\n${db.concatName(employeeID)} is already assigned to the role of ${response.newRole}.\n`);
             return begin();
         };
         await db.updateInfo("employee", [{role_id: newRoleID}, {id: employeeID.id}]);
-        console.log(`\nSuccess! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
+        console.log(`\nSuccess! ${db.concatName(employeeID)} has been assigned the role of ${response.newRole}.\n`);
         begin();
     });
 };
 
 const employeeManager = async employeeID => {
     const managers = await db.viewManagers();
-    // Selects the employee's current manager
-    let current;
-    managers.forEach(manager => {
-        if (manager.id === employeeID.manager_id) {
-            current = `${manager.first_name} ${manager.last_name}`;
-        };
-    });
-    console.log(`\n${employeeID.first_name} ${employeeID.last_name}'s current manager is ${current}.\n`);
+    let current = "This employee doesn't currently have a manager";
+    // Selects the employee's current manager if they have one
+    if (employeeID.manager_id) {
+        current = db.concatName(managers.filter(manager=>manager.id === employeeID.manager_id)[0]);
+        console.log(`\n${db.concatName(employeeID)}'s current manager is ${current}.\n`);
+    } else {
+        console.log(`\n${current}.\n`);
+    };
     inquirer.prompt([
         {
             type: "list",
-            message: `Which manager would you like to reassign ${employeeID.first_name} ${employeeID.last_name} to?`,
-            choices: [...managers.map(manager=>`${manager.first_name} ${manager.last_name}`), "This employee doesn't have a manager"],
+            message: `Which manager would you like to reassign ${db.concatName(employeeID)} to?`,
+            choices: [...managers.map(manager=>`${db.concatName(manager)} - ${manager.title}`), "This employee doesn't have a manager"],
             name: 'newManager'
         }
     ]).then(async (response) => {
-        let newManagerID;
-        managers.forEach(manager => {
-            if (`${manager.first_name} ${manager.last_name}` === response.newManager) {
-                newManagerID = manager;
-            };
-            if (`${newManagerID.first_name} ${newManagerID.last_name}` === current) {
-                console.log(`\n${current} is already assigned as ${employeeID.first_name} ${employeeID.last_name}'s manager.\n`);
-                return begin();
-            };
-        });
+        let newManagerID = filter(manager=>`${db.concatName(manager)} - ${manager.title}` === response.newManager)[0];
+        if (db.concatName(newManagerID) === current) {
+            console.log(`\n${current} is already assigned as ${db.concatName(employeeID)}'s manager.\n`);
+            return begin();
+        };
         await db.updateInfo("employee", [{manager_id: newManagerID.id}, {id: employeeID.id}]);
-        console.log(`\nSuccess! Assigned ${newManagerID.first_name} ${newManagerID.last_name} as ${employeeID.first_name} ${employeeID.last_name}'s manager.\n`);
+        console.log(`\nSuccess! Assigned ${db.concatName(newManagerID)} as ${db.concatName(employeeID)}'s manager.\n`);
         begin();
     });
 };
@@ -549,9 +511,9 @@ const viewInfo = () => {
 };
 
 const viewDepartments = async () => {
-    const depNames = await db.tableInfo("department");
+    const deps = await db.tableInfo("department");
     console.log(`\nDepartments:\n`);
-    depNames.forEach(department => console.log(department.name));
+    deps.forEach(dep => console.log(dep.name));
     // Extra line for formatting
     console.log("");
     begin();
@@ -560,23 +522,23 @@ const viewDepartments = async () => {
 // This function formats employee information into a well organized table
 const employeeTable = async employeeArr => {
     const emps = await db.tableInfo("employee");
-    let employeeTable = [];
-    employeeArr.forEach(employee => {
+    let table = [];
+    employeeArr.forEach(emp => {
         let empObj = {};
-        empObj["ID #"] = employee.id;
-        empObj.Name = `${employee.first_name} ${employee.last_name}`;
-        empObj["Job Title"] = employee.title;
-        empObj.Department = employee.name;
-        empObj.Salary = "$" + employee.salary;
+        empObj["ID #"] = emp.id;
+        empObj.Name = `${db.concatName(emp)}`;
+        empObj["Job Title"] = emp.title;
+        empObj.Department = emp.name;
+        empObj.Salary = "$" + emp.salary;
         empObj.Manager = "This employee has no manager";
-        emps.forEach(emp => {
-            if (employee.manager_id === emp.id) {
-                empObj.Manager = `${emp.first_name} ${emp.last_name}`;
+        emps.forEach(employee => {
+            if (emp.manager_id === employee.id) {
+                empObj.Manager = `${db.concatName(employee)}`;
             };
         });
-        employeeTable.push(empObj);
+        table.push(empObj);
     });
-    console.table(employeeTable);
+    console.table(table);
     begin();
 };
 
@@ -611,8 +573,10 @@ const viewRoles = () => {
         if (response.choice === "Specific department roles") {
             departmentRoles();
         } else {
-            const roleInfo = await db.customInfo("title AS Role, salary AS Salary", "role");
-            console.table(roleInfo);
+            const roles = await db.tableInfo("role");
+            console.log(`\nAll Roles:\n`);
+            roles.forEach(role=>console.log(role.title));
+            console.log('');
             begin();
         };
     });
@@ -629,7 +593,9 @@ const departmentRoles = async () => {
         }
     ]).then(async (response) => {
         const depRoles = await db.rolesByDepartment(response.departmentChoice);
-        console.table(depRoles);
+        console.log(`\n${response.departmentChoice} roles:\n`);
+        depRoles.forEach(role=>console.log(role.title));
+        console.log("");
         begin();                
     });
 };
@@ -697,16 +663,11 @@ const employeeByManager = async () => {
         {
             type: 'list',
             message: "Which manager's employees would you like to see?",
-            choices: managers.map(manager => `${manager.first_name} ${manager.last_name} - ${manager.title}`),
+            choices: managers.map(manager => `${db.concatName(manager)} - ${manager.title}`),
             name: 'managerChoice'
         }
     ]).then(async (response) => {
-        let managerID;
-        managers.forEach(manager => {
-            if (`${manager.first_name} ${manager.last_name}` === response.managerChoice) {
-                managerID = manager.id;
-            };
-        });
+        let managerID = managers.filter(manager=>`${db.concatName(manager)} - ${manager.title}` === response.managerChoice)[0].id;
         const emps = await db.innerJoin("employee.manager_id", managerID);
         if (emps.length < 1) {
             console.log(`\n${response.managerChoice} has no employees on record.\n`);
@@ -782,7 +743,7 @@ const deleteEmployee = async () => {
         {
             type: 'list',
             message: "Which employee would you like to delete?",
-            choices: emps.map(emp=>`${emp.first_name} ${emp.last_name}`),
+            choices: emps.map(emp=>`${db.concatName(emp)}`),
             name: 'deleteChoice'
         }
     ]).then(async (response) => {
