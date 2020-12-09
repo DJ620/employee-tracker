@@ -32,25 +32,25 @@ const begin = () => {
             name: "choice"
         }
     ]).then((response) => {
-            switch (response.choice) {
-                case "Add information":
-                    addInfo();
-                    break;
-                case "Update information":
-                    updateInfo();
-                    break;
-                case "View information":
-                    viewInfo();
-                    break;
-                case "Delete information":
-                    deleteInfo();
-                    break;
-                case "I'm all done":
-                    connection.end();
-                    break;
-                default:
-                    begin();
-            };
+        switch (response.choice) {
+            case "Add information":
+                addInfo();
+                break;
+            case "Update information":
+                updateInfo();
+                break;
+            case "View information":
+                viewInfo();
+                break;
+            case "Delete information":
+                deleteInfo();
+                break;
+            case "I'm all done":
+                process.exit();
+                break;
+            default:
+                begin();
+        };
     });
 };
 
@@ -266,7 +266,7 @@ const updateRole = async () => {
             name: 'action'
         }
     ]).then((response) => {
-        // Sets roleID to the role the user has chosen
+        // Sets roleID to the role the user has chosen and passes it into the appropriate function
         let roleID;
         roles.forEach(role => {
             if (role.title === response.toUpdate) {
@@ -320,6 +320,7 @@ const updateSalary = roleID => {
 
 const switchDepartment = async roleID => {
     const dept = await db.tableInfo("department");
+    // Selects the department the role is currently assigned to
     let current;
     dept.forEach(department => {
         if (department.id === roleID.department_id) {
@@ -368,7 +369,7 @@ const updateEmployee = async () => {
             name: 'action'
         }
     ]).then((response) => {
-        // Selects the employee the user has chosen and passes it into one of the employee functions
+        // Selects the employee the user has chosen and passes it into the appropriate function
         let employeeID;
         emp.forEach(employee => {
             if (`${employee.first_name} ${employee.last_name}` === response.toUpdate) {
@@ -419,13 +420,14 @@ const employeeName = employeeID => {
 
 const employeeRole = async employeeID => {
     const roles = await db.tableInfo('role');
+    // Selects the employee's current role
     let current;
     roles.forEach(role => {
         if (role.id === employeeID.role_id) {
-            current = role.title;
+            current = role;
         };
     });
-    console.log(`\n${employeeID.first_name} ${employeeID.last_name}'s current role is ${current}.\n`);
+    console.log(`\n${employeeID.first_name} ${employeeID.last_name}'s current role is ${current.title}.\n`);
     inquirer.prompt([
         {
             type: 'list',
@@ -434,12 +436,17 @@ const employeeRole = async employeeID => {
             name: 'newRole'
         }
     ]).then(async (response) => {
+        //Selects the employee's new role's ID
         let newRoleID;
         roles.forEach(role => {
             if (role.title === response.newRole) {
                 newRoleID = role.id;
             };
         });
+        if (newRoleID === current.id) {
+            console.log(`\n${employeeID.first_name} ${employeeID.last_name} is already assigned to the role of ${response.newRole}.\n`);
+            return begin();
+        };
         await db.updateInfo("employee", [{role_id: newRoleID}, {id: employeeID.id}]);
         console.log(`\nSuccess! ${employeeID.first_name} ${employeeID.last_name} has been assigned the role of ${response.newRole}.\n`);
         begin();
@@ -448,6 +455,7 @@ const employeeRole = async employeeID => {
 
 const employeeManager = async employeeID => {
     const managers = await db.viewManagers();
+    // Selects the employee's current manager
     let current;
     managers.forEach(manager => {
         if (manager.id === employeeID.manager_id) {
@@ -467,6 +475,10 @@ const employeeManager = async employeeID => {
         managers.forEach(manager => {
             if (`${manager.first_name} ${manager.last_name}` === response.newManager) {
                 newManagerID = manager;
+            };
+            if (`${newManagerID.first_name} ${newManagerID.last_name}` === current) {
+                console.log(`\n${current} is already assigned as ${employeeID.first_name} ${employeeID.last_name}'s manager.\n`);
+                return begin();
             };
         });
         await db.updateInfo("employee", [{manager_id: newManagerID.id}, {id: employeeID.id}]);
@@ -508,65 +520,13 @@ const viewInfo = () => {
 const viewDepartments = async () => {
     const depNames = await db.tableInfo("department");
     console.log(`\nDepartments:\n`);
-    depNames.map(department => department.name).forEach(name => {
-        console.log(name);
-    });
+    depNames.forEach(department => console.log(department.name));
+    // Extra line for formatting
     console.log("");
     begin();
 };
 
-const budgets = async () => {
-    const deps = await db.tableInfo("department");
-    inquirer.prompt([
-        {
-            type: 'list',
-            message: "Which department's total utilized budget would you like to see?",
-            choices: deps.map(department => department.name),
-            name: "departmentChoice"
-        }
-    ]).then(async (response) => {
-        const emps = await db.innerJoin("department.name", response.departmentChoice);
-        let budget = emps.map(employee => employee.salary).reduce((a, b) => a + b);
-        console.log(`\nThe total utilized budget for the ${response.departmentChoice} department is $${budget}.\n`);
-        employeeTable(emps);
-    });
-};
-
-const viewRoles = () => {
-    inquirer.prompt([
-        {
-            type: 'list',
-            message: "What roles would you like to see?",
-            choices: ["All roles", "Specific department roles"],
-            name: 'choice'
-        }
-    ]).then(async (response) => {
-        if (response.choice === "Specific department roles") {
-            departmentRoles();
-        } else {
-            const roleInfo = await db.customInfo("title, salary", "role");
-            console.table(roleInfo);
-            begin();
-        };
-    });
-};
-
-const departmentRoles = async () => {
-    const depNames = await db.customInfo("name", "department");
-    inquirer.prompt([
-        {
-            type: 'list',
-            message: "Which department's roles would you like to see?",
-            choices: depNames,
-            name: 'departmentChoice'
-        }
-    ]).then(async (response) => {
-        const depRoles = await db.rolesByDepartment(response.departmentChoice);
-        console.table(depRoles);
-        begin();                
-    });
-};
-
+// This function formats employee information into a well organized table
 const employeeTable = async employeeArr => {
     const emps = await db.tableInfo("employee");
     let employeeTable = [];
@@ -589,6 +549,60 @@ const employeeTable = async employeeArr => {
     begin();
 };
 
+const budgets = async () => {
+    const deps = await db.tableInfo("department");
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "Which department's total utilized budget would you like to see?",
+            choices: deps.map(department => department.name),
+            name: "departmentChoice"
+        }
+    ]).then(async (response) => {
+        // The db.innerJoin method queries all three tables for employee information based on the parameters it is given
+        const emps = await db.innerJoin("department.name", response.departmentChoice);
+        // Adds the salaries of all employees within the chosen department
+        let budget = emps.map(employee => employee.salary).reduce((a, b) => a + b);
+        console.log(`\nThe total utilized budget for the ${response.departmentChoice} department is $${budget}.\n`);
+        employeeTable(emps);
+    });
+};
+
+const viewRoles = () => {
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "What roles would you like to see?",
+            choices: ["All roles", "Specific department roles"],
+            name: 'choice'
+        }
+    ]).then(async (response) => {
+        if (response.choice === "Specific department roles") {
+            departmentRoles();
+        } else {
+            const roleInfo = await db.customInfo("title AS Role, salary AS Salary", "role");
+            console.table(roleInfo);
+            begin();
+        };
+    });
+};
+
+const departmentRoles = async () => {
+    const deps = await db.tableInfo("department");
+    inquirer.prompt([
+        {
+            type: 'list',
+            message: "Which department's roles would you like to see?",
+            choices: deps.map(dep=>dep.name),
+            name: 'departmentChoice'
+        }
+    ]).then(async (response) => {
+        const depRoles = await db.rolesByDepartment(response.departmentChoice);
+        console.table(depRoles);
+        begin();                
+    });
+};
+
 const viewEmployees = () => {
     inquirer.prompt([
         {
@@ -609,6 +623,7 @@ const viewEmployees = () => {
                 employeeByManager();
                 break;
             default:
+                // Displays all employees
                 const emps = await db.innerJoin();
                 employeeTable(emps);
         };       
@@ -616,12 +631,12 @@ const viewEmployees = () => {
 };
 
 const employeeByDepartment = async () => {
-    const depNames = await db.customInfo("name", "department");
+    const deps = await db.tableInfo("department");
     inquirer.prompt([
         {
             type: 'list',
             message: "Which department's employees would you like to see?",
-            choices: depNames,
+            choices: deps.map(dep=>dep.name),
             name: 'departmentChoice'
         }
     ]).then(async (response) => {
@@ -631,12 +646,12 @@ const employeeByDepartment = async () => {
 };
 
 const employeeByRole = async () => {
-    const roleTitles = await db.customInfo("title", "role");
+    const roles = await db.tableInfo("role");
     inquirer.prompt([
         {
             type: 'list',
             message: "View all employees from which role?",
-            choices: roleTitles.map(role=>role.title),
+            choices: roles.map(role=>role.title),
             name: 'roleChoice'
         }
     ]).then(async (response) => {
@@ -651,7 +666,7 @@ const employeeByManager = async () => {
         {
             type: 'list',
             message: "Which manager's employees would you like to see?",
-            choices: managers.map(manager => `${manager.first_name} ${manager.last_name}`),
+            choices: managers.map(manager => `${manager.first_name} ${manager.last_name} - ${manager.title}`),
             name: 'managerChoice'
         }
     ]).then(async (response) => {
@@ -662,6 +677,10 @@ const employeeByManager = async () => {
             };
         });
         const emps = await db.innerJoin("employee.manager_id", managerID);
+        if (emps.length < 1) {
+            console.log(`\n${response.managerChoice} has no employees on record.\n`);
+            return begin();
+        };
         employeeTable(emps);
     });
 };
@@ -694,15 +713,16 @@ const deleteInfo = () => {
 };
 
 const deleteDepartment = async () => {
-    const depNames = await db.customInfo("name", "department");
+    const deps = await db.tableInfo("department");
     inquirer.prompt([
         {
             type: 'list',
             message: "Which department would you like to delete?",
-            choices: depNames,
+            choices: deps.map(dep=>dep.name),
             name: 'deleteChoice'
         }
     ]).then(async (response) => {
+        // The db.deleteInfo method deletes data from the database based on parameters that are passed in
         await db.deleteInfo("department", {name: response.deleteChoice});
         console.log(`\nSuccess! ${response.deleteChoice} has been removed from the database.\n`);
         begin();
@@ -710,12 +730,12 @@ const deleteDepartment = async () => {
 };
 
 const deleteRole = async () => {
-    const roleTitles = await db.customInfo("title", "role");
+    const roles = await db.tableInfo("role");
     inquirer.prompt([
         {
             type: 'list',
             message: "What role would you like to delete?",
-            choices: roleTitles.map(role=>role.title),
+            choices: roles.map(role=>role.title),
             name: "deleteChoice"
         }
     ]).then(async (response) => {
@@ -726,12 +746,12 @@ const deleteRole = async () => {
 };
 
 const deleteEmployee = async () => {
-    const empNames = await db.customInfo("first_name, last_name", "employee");
+    const emps = await db.tableInfo("employee");
     inquirer.prompt([
         {
             type: 'list',
             message: "Which employee would you like to delete?",
-            choices: empNames.map(employee=>`${employee.first_name} ${employee.last_name}`),
+            choices: emps.map(emp=>`${emp.first_name} ${emp.last_name}`),
             name: 'deleteChoice'
         }
     ]).then(async (response) => {

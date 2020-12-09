@@ -27,7 +27,7 @@ class DB {
     };
 
     viewManagers() {
-        return this.connection.query("SELECT employee.id, employee.first_name employee.last_name FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'");
+        return this.connection.query("SELECT employee.id, employee.first_name, employee.last_name, role.title FROM employee LEFT JOIN role ON employee.role_id = role.id WHERE role.title REGEXP 'Manager?'");
     };
 
     rolesByDepartment(department) {
