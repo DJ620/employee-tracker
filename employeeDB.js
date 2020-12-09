@@ -519,30 +519,6 @@ const viewDepartments = async () => {
     begin();
 };
 
-// This function formats employee information into a well organized table
-const employeeTable = async employeeArr => {
-    const emps = await db.tableInfo("employee");
-    let table = [];
-    employeeArr.forEach(emp => {
-        let empObj = {};
-        empObj["ID #"] = emp.id;
-        empObj.Name = `${db.concatName(emp)}`;
-        empObj["Job Title"] = emp.title;
-        empObj.Department = emp.name;
-        empObj.Salary = "$" + emp.salary;
-        empObj.Manager = "This employee has no manager";
-        emps.forEach(employee => {
-            if (emp.manager_id === employee.id) {
-                empObj.Manager = `${db.concatName(employee)}`;
-            };
-        });
-        table.push(empObj);
-    });
-    console.log("");
-    console.table(table);
-    begin();
-};
-
 const budgets = async () => {
     const deps = await db.tableInfo("department");
     inquirer.prompt([
@@ -558,7 +534,8 @@ const budgets = async () => {
         // Adds the salaries of all employees within the chosen department
         let budget = emps.map(employee => employee.salary).reduce((a, b) => a + b);
         console.log(`\nThe total utilized budget for the ${response.departmentChoice} department is $${budget}.\n`);
-        employeeTable(emps);
+        await db.employeeTable(emps);
+        begin();
     });
 };
 
@@ -623,7 +600,8 @@ const viewEmployees = () => {
             default:
                 // Displays all employees
                 const emps = await db.innerJoin();
-                employeeTable(emps);
+                await db.employeeTable(emps);
+                begin();
         };       
     });
 };
@@ -639,7 +617,8 @@ const employeeByDepartment = async () => {
         }
     ]).then(async (response) => {
         const emps = await db.innerJoin("department.name", response.departmentChoice);
-        employeeTable(emps);
+        await db.employeeTable(emps);
+        begin();
     });
 };
 
@@ -654,7 +633,8 @@ const employeeByRole = async () => {
         }
     ]).then(async (response) => {
         const emps = await db.innerJoin("role.title", response.roleChoice);
-        employeeTable(emps);
+        await db.employeeTable(emps);
+        begin();
     });
 };
 
@@ -674,7 +654,8 @@ const employeeByManager = async () => {
             console.log(`\n${response.managerChoice} has no employees on record.\n`);
             return begin();
         };
-        employeeTable(emps);
+        await db.employeeTable(emps);
+        begin();
     });
 };
 
@@ -778,10 +759,10 @@ const employeeSearch = () => {
             };
         });
         if (match) {
-            employeeTable([match]);
+            await db.employeeTable([match]);
         } else {
             console.log(`\nNo employee found\n`);
-            begin();
         };
+        begin();
     });
 };

@@ -61,5 +61,27 @@ class DB {
     concatName(array) {
         return `${array.first_name} ${array.last_name}`;
     };
+
+    async employeeTable(employeeArr)  {
+        const emps = await this.tableInfo("employee");
+        let table = [];
+        employeeArr.forEach(emp => {
+            let empObj = {};
+            empObj["ID #"] = emp.id;
+            empObj.Name = `${this.concatName(emp)}`;
+            empObj["Job Title"] = emp.title;
+            empObj.Department = emp.name;
+            empObj.Salary = "$" + emp.salary;
+            empObj.Manager = "This employee has no manager";
+            emps.forEach(employee => {
+                if (emp.manager_id === employee.id) {
+                    empObj.Manager = `${this.concatName(employee)}`;
+                };
+            });
+            table.push(empObj);
+        });
+        console.log("");
+        console.table(table);
+    };
 };
 module.exports = new DB(connection);
