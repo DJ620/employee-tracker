@@ -147,7 +147,7 @@ const addRole = async () => {
             console.log(`\n${response.role} is already on file.\n`);
             return begin();
         };
-        // Selecting the department the user has chosen and passing it into the db.addInfo method
+        // Selecting the department the user has chosen and passing it into the db.addInfo method, filtering it for the specific department that was chosen, and adding [0] because we want the object itself
         let department = deps.filter(dep=>dep.name === response.department)[0];
         await db.addInfo("role",
                 {
@@ -172,12 +172,12 @@ const addEmployee = async () => {
         {
             type: 'input',
             message: "What is the employee's first name?",
-            name: "firstName"
+            name: "first_name"
         },
         {
             type: 'input',
             message: "What is the employee's last name?",
-            name: "lastName"
+            name: "last_name"
         },
         {
             type: 'list',
@@ -188,36 +188,30 @@ const addEmployee = async () => {
         {
             type: 'list',
             message: "Who is the employee's manager?",
-            choices: [...managers.map(employee=> `${employee.first_name} ${employee.last_name}`), "This employee doesn't have a manager"],
+            // The spread operator allows me to map through the managers array, take out the information I want, and then add an option if the employee doesn't have a manager
+            // The db.concatName method returns the first and last name concatenated of any employee object passed through
+            choices: [...managers.map(manager=> `${db.concatName(manager)} - ${manager.title}`), "This employee doesn't have a manager"],
             name: 'manager'
         }
     ]).then(async (response) => {
         let emps = await db.tableInfo("employee");
         let exists = false;
         emps.forEach(emp=>{
-            if (`${emp.first_name} ${emp.last_name}` === `${response.firstName} ${response.lastName}`) {
+            if (db.concatName(emp) === db.concatName(response)) {
                 exists = true;
             };
         });
         if (exists) {
-            console.log(`\n${response.firstName} ${response.lastName} is already on file.\n`);
+            console.log(`\n${db.concatName(response)} is already on file.\n`);
             return begin();
         };
-        let roleID; 
-        let managerID;
         // Selecting the user's chosen role id from all roles in the database
-        roles.forEach(role => {
-            if (role.title === response.role) {
-                roleID = role.id;
-            };
-        });
+        let roleID = roles.filter(role=>role.title === response.role)[0].id;
+        let managerID; 
         // If the employee does have a manager, this sets managerID to that manager's id
         if (response.manager !== "This employee doesn't have a manager") {
-            managers.forEach(manager => {
-                if (`${manager.first_name} ${manager.last_name}` === response.manager) {
-                    managerID = manager.id;
-                };
-            });
+            managerID = managers.filter(manager=>`${db.concatName(manager)}` === response.manager);
+            console.log(managerID);
         };
         await db.addInfo("employee",
         {

@@ -64,5 +64,8 @@ class DB {
         return this.connection.query(`DELETE FROM ${table} WHERE ?`, info);
     };
 
+    concatName(array) {
+        return `${array.first_name} ${array.last_name}`;
+    };
 };
 module.exports = new DB(connection);
