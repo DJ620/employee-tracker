@@ -25,7 +25,7 @@ Once you have downloaded the packages, you will need to copy and paste the schem
 
 Once you have done this, go to the employeeDB.js file and update the mysql create connection object with your MySQL Workbench password. Now you are ready to use the CLI. Navigate to the root directory in your terminal, type 'node employeeDB.js', and hit enter. 
 
-For a video demonstration of this app, click here:
+[Click here for a video demonstration of the app](https://drive.google.com/file/d/1oQ6W52cbJriPgfovIs7WEEZ2GwtK6W8r/view)
 
 ## Credits
 
